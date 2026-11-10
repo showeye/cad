@@ -23,6 +23,7 @@ cad/
 │           ├── render.py     # offscreen PNG renders for listings; OCP viewer helper
 │           ├── testing.py    # standard pytest suite + geometry snapshots
 │           └── cli.py        # `cadkit list | build | show | new`
+├── examples/                 # throwaway scripts (viewer checks, experiments); not products
 └── projects/
     └── <product>/            # one sellable product = one workspace package
         ├── pyproject.toml    # depends on cadkit; registers entry point "cadkit.models"
