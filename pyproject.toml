@@ -1,12 +1,29 @@
 [project]
 name = "cad"
 version = "0.1.0"
-description = "Add your description here"
+description = "Parametric commercial CAD workspace"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "cadkit",
     "build123d>=0.13.0",
     "ocp-vscode>=4.2.0",
     "pyvista>=0.49.2",
     "trimesh>=5.2.0",
 ]
+
+[tool.uv.workspace]
+members = ["packages/*", "projects/carnall"]
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[dependency-groups]
+dev = ["pytest>=8.3", "ruff>=0.11", "networkx>=3.4", "lxml>=5.3"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["packages/cadkit/tests", "projects/carnall/tests"]

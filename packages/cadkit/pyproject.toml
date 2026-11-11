@@ -1,0 +1,13 @@
+[project]
+name = "cadkit"
+version = "0.1.0"
+description = "Shared parametric CAD, quality gates and reproducible exports"
+requires-python = ">=3.12"
+dependencies = ["build123d>=0.13.0", "pydantic>=2.10", "trimesh>=5.2.0", "pillow>=11"]
+
+[project.scripts]
+cadkit = "cadkit.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

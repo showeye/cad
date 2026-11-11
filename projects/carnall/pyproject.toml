@@ -1,0 +1,16 @@
+[project]
+name = "carnall"
+version = "0.1.0"
+description = "Na szychcie od 1915: kinetic Carnall winding-engine souvenir"
+requires-python = ">=3.12"
+dependencies = ["cadkit"]
+
+[project.entry-points."cadkit.models"]
+carnall = "carnall.model:model"
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
