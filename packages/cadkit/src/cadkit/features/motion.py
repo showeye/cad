@@ -1,7 +1,31 @@
-"""Planar slider-cranks and open-belt geometry; mm and degrees throughout."""
+"""Rigid transforms, planar slider-cranks and open belts; mm and degrees throughout."""
 
 import math
 from dataclasses import dataclass
+
+import numpy as np
+
+
+def rigid_transform(axis=(0, 0, 1), origin=(0, 0, 0), angle=0, shift=(0, 0, 0)):
+    """Homogeneous right-handed axis rotation followed by translation, in mm/degrees.
+
+    The rotation axis passes through ``origin``. The returned nested lists can be
+    serialised as rigid presentation poses without changing the original CAD mesh.
+    """
+    k, centre, translation = (np.asarray(v, dtype=float) for v in (axis, origin, shift))
+    if any(v.shape != (3,) or not np.isfinite(v).all() for v in (k, centre, translation)):
+        raise ValueError("Finite three-dimensional vectors required")
+    if not math.isfinite(angle) or np.linalg.norm(k) == 0:
+        raise ValueError("Finite angle and nonzero rotation axis required")
+    k = k / np.linalg.norm(k)
+    x, y, z = k
+    cross = np.array([[0, -z, y], [z, 0, -x], [-y, x, 0]])
+    t = math.radians(angle)
+    rotation = np.eye(3) + math.sin(t) * cross + (1 - math.cos(t)) * cross @ cross
+    result = np.eye(4)
+    result[:3, :3] = rotation
+    result[:3, 3] = centre - rotation @ centre + translation
+    return result.tolist()
 
 
 def slider_crank(radius: float, rod: float, angle: float) -> tuple[float, float, float]:

@@ -29,7 +29,7 @@ def main():
     if args.model not in models:
         parser.error(f"Unknown model {args.model}; available: {', '.join(models)}")
     model = models[args.model]
-    if args.variant not in model.variants:
+    if args.variant not in model.variants and not (args.command == "build" and args.all):
         parser.error(f"Unknown variant {args.variant}")
     if args.command == "show":
         from ocp_vscode import show

@@ -81,7 +81,13 @@ if __name__ == "__main__":
         "Three looks of the coal heart, closed and open",
     )
     square = (0.08, 0.08, 0.92, 0.92)
-    turns = ["closed", "40° turn: first light", "80°: the bud", "120°: the room", "180°: fully open"]
+    turns = [
+        "closed",
+        "40° turn: first light",
+        "80°: the bud",
+        "120°: the room",
+        "180°: fully open",
+    ]
     sheet(
         [[(on_paper(f"wings_{i}", square, 400), t, "") for i, t in enumerate(turns)]],
         OUT / "opening_a_wings_strip.png",
@@ -105,9 +111,21 @@ if __name__ == "__main__":
     sheet(
         [
             [
-                (on_paper("wings_counter", square, 520), "A  Skrzydła", "the whole room is in view"),
-                (on_paper("lift_counter", square, 520), "B  Pokład", "the raised top hides the room"),
-                (on_paper("bloom_counter", square, 520), "C  Rozkwit", "open all round, 190 mm wide"),
+                (
+                    on_paper("wings_counter", square, 520),
+                    "A  Skrzydła",
+                    "the whole room is in view",
+                ),
+                (
+                    on_paper("lift_counter", square, 520),
+                    "B  Pokład",
+                    "the raised top hides the room",
+                ),
+                (
+                    on_paper("bloom_counter", square, 520),
+                    "C  Rozkwit",
+                    "open all round, 190 mm wide",
+                ),
             ]
         ],
         OUT / "counter_view_comparison.png",
@@ -116,8 +134,16 @@ if __name__ == "__main__":
     sheet(
         [
             [
-                (on_paper("look_bryla_open", hero, 700), "Honey lining (recommended)", "the shell glows like a lit window"),
-                (on_paper("wings_open_ember", hero, 700), "Tile-red lining", "the shell glows like embers; the room stands out more"),
+                (
+                    on_paper("look_bryla_open", hero, 700),
+                    "Honey lining (recommended)",
+                    "the shell glows like a lit window",
+                ),
+                (
+                    on_paper("wings_open_ember", hero, 700),
+                    "Tile-red lining",
+                    "the shell glows like embers; the room stands out more",
+                ),
             ]
         ],
         OUT / "lining_comparison.png",

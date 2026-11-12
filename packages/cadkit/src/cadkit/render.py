@@ -90,10 +90,10 @@ def compose_sheet(out: Path, name: str, version: str):
     """A neutral labelled review sheet: hero, reverse and overhead CAD renders."""
     sheet = Image.new("RGB", (1800, 1500), "#F2EEE5")
     draw = ImageDraw.Draw(sheet)
-    draw.text((65, 35), "NA SZYCHCIE OD 1915", font=_font(43), fill="#252C2C")
+    draw.text((65, 35), name.upper(), font=_font(43), fill="#252C2C")
     draw.text(
         (66, 95),
-        f"{name.upper()}  /  Full form  /  {version}  /  Engineering concept",
+        f"{version}  /  Parametric CAD  /  Engineering concept",
         font=_font(21),
         fill="#675D50",
     )
@@ -112,13 +112,13 @@ def compose_sheet(out: Path, name: str, version: str):
             sheet.paste(source, (x, y))
     draw.text(
         (70, 1010),
-        "Cutaway engine house / exposed twin slider-cranks / continuous cord",
+        "Named CAD components / physical prototype required",
         font=_font(23),
         fill="#252C2C",
     )
     draw.text(
         (70, 1415),
-        "180 x 90 x 120 mm  |  Iron / ochre / brick / cream  |  Physical prototype required",
+        "Units: mm and degrees  |  CAD geometry and rigid motion preview",
         font=_font(23),
         fill="#675D50",
     )

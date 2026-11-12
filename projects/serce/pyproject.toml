@@ -1,0 +1,17 @@
+[project]
+name = "serce"
+version = "0.1.0"
+description = "Serce na węgiel: parametric two-wing motion prototype"
+requires-python = ">=3.12"
+dependencies = ["cadkit"]
+
+[project.entry-points."cadkit.models"]
+serce = "serce.model:model"
+serce-coupons = "serce.coupons:model"
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

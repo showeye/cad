@@ -18,7 +18,7 @@ from pathlib import Path
 from build123d import Compound, Pos, export_stl
 
 sys.path.insert(0, str(Path(__file__).parent))
-import heart_concept as hc  # noqa: E402
+import heart_concept as hc
 
 BUILD = Path(__file__).parent / "_build"
 

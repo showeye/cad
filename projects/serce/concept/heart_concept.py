@@ -11,10 +11,25 @@ Units: mm, degrees. Origin at the heart's (hidden) tip, z up, front is -y, the v
 """
 
 import math
+from itertools import pairwise
 
 import numpy as np
-from build123d import Axis, Box, Compound, Cone, Cylinder, Face, Plane, Pos, Rot, Shell, Solid
-from build123d import Sphere, Vector, Wire
+from build123d import (
+    Axis,
+    Box,
+    Compound,
+    Cone,
+    Cylinder,
+    Face,
+    Plane,
+    Pos,
+    Rot,
+    Shell,
+    Solid,
+    Sphere,
+    Vector,
+    Wire,
+)
 from scipy.optimize import linprog
 from scipy.spatial import ConvexHull, HalfspaceIntersection
 
@@ -121,7 +136,9 @@ def big_box(x=(-300, 300), y=(-300, 300), z=(-300, 300)):
 
 def above_plane(point, normal, offset=0.0):
     """Big block on the +normal side of a plane (moved along the normal by `offset`)."""
-    plane = Plane(origin=tuple(np.asarray(point) + offset * np.asarray(normal)), z_dir=tuple(normal))
+    plane = Plane(
+        origin=tuple(np.asarray(point) + offset * np.asarray(normal)), z_dir=tuple(normal)
+    )
     return plane.location * Pos(0, 0, 300) * Box(600, 600, 600)
 
 
@@ -243,7 +260,7 @@ def banded(planes):
     """Slice a polyhedron into horizontal beds; every second bed is slightly smaller."""
     a, d = planes
     out = []
-    for k, (z0, z1) in enumerate(zip(BANDS, BANDS[1:])):
+    for k, (z0, z1) in enumerate(pairwise(BANDS)):
         f = 1.0 if k % 2 == 0 else BAND_STEP
         ak = np.vstack([a * [1 / f, 1 / f, 1.0], [0, 0, 1.0], [0, 0, -1.0]])
         dk = np.concatenate([d, [z1, -z0]])
@@ -387,8 +404,10 @@ def base_common():
 
 
 def pedestal(roof=True):
-    """Fixed coal bed under the heart. With `roof`, its two main facets are square to the hinges,
-    so the opening shells sweep just above them and never close a gap on a finger."""
+    """Fixed coal bed with nominal constant sweep clearance at the two hinge roof planes.
+
+    This massing model does not establish finger safety at the shell seams or hinges.
+    """
     a, d = [(0, 0, -1.0)], [-(RING_TOP + 0.4)]
     for k in range(20):
         t = 2 * math.pi * (k + 0.5) / 20
@@ -408,7 +427,9 @@ def pedestal(roof=True):
         slope = math.radians(42)
         for k in range(10):
             t = 2 * math.pi * (k + 0.5) / 10
-            n = np.array([math.sin(slope) * math.cos(t), math.sin(slope) * math.sin(t), math.cos(slope)])
+            n = np.array(
+                [math.sin(slope) * math.cos(t), math.sin(slope) * math.sin(t), math.cos(slope)]
+            )
             a += [tuple(n)]
             d += [float(n @ np.array([16 * math.cos(t), 13 * math.sin(t), Z_SEAT]))]
         a += [(0, 0, 1.0)]
@@ -418,12 +439,26 @@ def pedestal(roof=True):
 
 # ---------------------------------------------------------------- opening A: wings
 WING_MAX = 125.0  # full swing of each front shell about its V edge
+_TAIL = 11.0  # shell lever radius in the proposed drive
+_GROOVE_R = 20.0  # cam groove centreline radius
+_ECC = _TAIL * math.sin(math.radians(WING_MAX / 2))
 
 
 def wing_angle(turn):
-    """Shell angle for a base turn of 0..180 degrees: an eccentric gives a slow start and end."""
+    """Concept shell angle from the drawn eccentric circular groove and slotted tail.
+
+    The follower stays on x=0 on the groove's +y branch. Its displacement includes the
+    circle's sag, which a sinusoidal approximation omits. This establishes a nominal
+    motion law only; it proves neither the spatial linkage nor holding torque.
+    """
+    theta = math.radians(turn)
+    slider = (
+        -_ECC * math.cos(theta)
+        + math.sqrt(_GROOVE_R**2 - (_ECC * math.sin(theta)) ** 2)
+        - _GROOVE_R
+    )
     half = math.radians(WING_MAX / 2)
-    return math.degrees(half - math.asin(math.sin(half) * math.cos(math.radians(turn))))
+    return math.degrees(half + math.asin(max(-1.0, min(1.0, slider / _TAIL))))
 
 
 def wings(look, turn=0.0):
@@ -486,8 +521,15 @@ def lift(look, travel=0.0):
         parts += [(material, s) for s in clip(solids_of(small & stage), cavity)]
     floor = big_box((-20.5, 20.5), (-12, 10.5), (LIFT_SPLIT - 0.8, LIFT_SPLIT + 0.2))
     parts += [("tile", s) for s in solids_of(floor & cavity)]
-    parts.append(("coal_matte", up * big_box((-19, 19), (11.4, 13.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT + 3))))
-    parts.append(("honey", up * big_box((-19, 19), (10.6, 11.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT))))
+    parts.append(
+        (
+            "coal_matte",
+            up * big_box((-19, 19), (11.4, 13.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT + 3)),
+        )
+    )
+    parts.append(
+        ("honey", up * big_box((-19, 19), (10.6, 11.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT)))
+    )
     return parts
 
 
@@ -502,7 +544,9 @@ def bloom(look, amount=0.0):
     under = Compound(h["under"])
     top = big_box(z=(BLOOM_SPLIT + SEAM, 300))
     lining = [s for u, c in zip(h["under"], h["cavity"]) for s in solids_of(u - c)]
-    skins = [(m, cut(clip([s], top), under)) for m, s in h["skin"]] + [("lining", clip(lining, top))]
+    skins = [(m, cut(clip([s], top), under)) for m, s in h["skin"]] + [
+        ("lining", clip(lining, top))
+    ]
     low = big_box(z=(-300, BLOOM_SPLIT - SEAM))
     parts += [(m, s) for m, solid in h["skin"] for s in clip([solid], low)]
     for sx in (-1, 1):

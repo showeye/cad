@@ -67,7 +67,8 @@ def main():
     shader = next(n for n in floor_mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
     shader.inputs["Base Color"].default_value = (*_linear((0.949, 0.933, 0.898)), 1)
     shader.inputs["Roughness"].default_value = 0.85
-    bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 0, -0.0003))
+    floor_z = min(v[2] for part in data["parts"].values() for v in part["vertices"]) * MM
+    bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 0, floor_z - 0.0003))
     bpy.context.object.name = "Studio floor"
     bpy.context.object.data.materials.append(floor_mat)
 
