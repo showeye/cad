@@ -1,4 +1,4 @@
-"""Involute spur gears for printed drives: profile, solid and the angle at which a pair meshes.
+"""Involute spur gears and racks for printed drives: profile, solid and how a pair meshes.
 
 Standard 20 degree full-depth teeth (ISO 53 basic rack: addendum 1 module, dedendum 1.25
 modules). `shift` is the profile shift coefficient: a small pinion takes a positive shift to
@@ -6,6 +6,9 @@ avoid undercut and its mate the same negative shift, which keeps the standard ce
 `backlash` thins every tooth by that amount along the pitch circle, as running clearance for a
 printed pair. The flank below the base circle is a radial line, without the trochoid a cutter
 would leave; a pair must therefore be checked for interference, which `overlaps` does.
+
+A rack is the same basic rack as a solid: straight flanks at the pressure angle. It takes the
+profile shift of its mate, so the mate's pitch circle always rolls on the line x = 0.
 
 Lengths in mm, angles in degrees.
 """
@@ -94,3 +97,62 @@ def meshing_angle(teeth_a: int, teeth_b: int, angle_a: float, towards: float = 0
     (degrees, in the gears' plane) from A. External gears turn in opposite senses.
     """
     return towards + 180.0 + 180.0 / teeth_b - (angle_a - towards) * teeth_a / teeth_b
+
+
+def rack_outline(
+    module: float, teeth: int, depth: float, shift: float = 0.0, backlash: float = 0.0
+) -> list[tuple[float, float]]:
+    """Closed outline of a straight rack along Y whose teeth point +X.
+
+    The mate's pitch circle rolls on the line x = 0: its axis stands at x = pitch radius,
+    whatever its profile shift, which is passed here as `shift` and sets the teeth back by
+    shift * module. Teeth are centred on y = (k + 1/2) * pi * module for k = 0 .. teeth - 1,
+    so a tooth space is centred on y = 0 and the outline ends in the middle of a space at both
+    ends. `depth` is the solid body behind the root line.
+    """
+    if module <= 0 or teeth < 1 or depth <= 0:
+        raise ValueError("Require a positive module and depth and at least one tooth")
+    tangent = math.tan(math.radians(PRESSURE_ANGLE))
+    pitch = math.pi * module
+    reference = -shift * module  # where a tooth is as thick as a space, less the backlash
+    tip, root = reference + module, reference - 1.25 * module
+    at_tip = pitch / 4 - backlash / 2 - module * tangent  # half thickness at the tip
+    at_root = pitch / 4 - backlash / 2 + 1.25 * module * tangent
+    if at_tip <= 0 or at_root >= pitch / 2:
+        raise ValueError("Tooth vanishes: reduce the backlash")
+    points = [(root - depth, 0.0), (root, 0.0)]
+    for k in range(teeth):
+        centre = (k + 0.5) * pitch
+        points += [
+            (root, centre - at_root),
+            (tip, centre - at_tip),
+            (tip, centre + at_tip),
+            (root, centre + at_root),
+        ]
+    return points + [(root, teeth * pitch), (root - depth, teeth * pitch)]
+
+
+def rack(
+    module: float,
+    teeth: int,
+    width: float,
+    depth: float,
+    shift: float = 0.0,
+    backlash: float = 0.0,
+) -> Solid:
+    """Rack along Y from z = 0 to `width`, teeth pointing +X; see `rack_outline`."""
+    if width <= 0:
+        raise ValueError("Require a positive width")
+    outline = rack_outline(module, teeth, depth, shift, backlash)
+    return extrude(make_face(Polyline(*outline, close=True)), amount=width)
+
+
+def rack_offset(module: float, teeth: int, angle: float) -> float:
+    """Shift along Y, within one pitch, at which a rack meshes with a gear turned by `angle`.
+
+    The gear has `teeth` teeth, is built with a tooth on its own +X axis and stands on the
+    rack's +X side with its axis at (pitch radius, 0). Turning the gear counter-clockwise
+    moves the rack towards -Y by the pitch radius times the angle.
+    """
+    pitch = math.pi * module
+    return pitch_radius(module, teeth) * (math.pi - math.radians(angle)) % pitch

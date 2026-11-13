@@ -1,0 +1,16 @@
+[project]
+name = "chess-set-clockwork"
+version = "0.1.0"
+description = "Clockwork chess set: skeleton-clock pieces whose mechanisms work when a piece is moved"
+requires-python = ">=3.12"
+dependencies = ["cadkit"]
+
+[project.entry-points."cadkit.models"]
+clockwork_knight = "chess_set_clockwork.knight:model"
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

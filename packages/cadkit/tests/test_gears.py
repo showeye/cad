@@ -1,4 +1,4 @@
-"""Involute gears: standard dimensions, a pair that meshes without touching, and refusals."""
+"""Involute gears and racks: standard dimensions, pairs that mesh without touching, refusals."""
 
 import math
 
@@ -9,6 +9,9 @@ from cadkit.features.gears import (
     gear_outline,
     meshing_angle,
     pitch_radius,
+    rack,
+    rack_offset,
+    rack_outline,
     spur_gear,
 )
 from cadkit.process import FDM
@@ -64,3 +67,50 @@ def test_meshing_angle_in_any_direction():
 def test_impossible_gears_are_refused(values):
     with pytest.raises(ValueError):
         gear_outline(**values)
+
+
+def test_rack_dimensions():
+    outline = rack_outline(1.0, 3, depth=2.5, shift=0.4)
+    xs = [x for x, _ in outline]
+    ys = [y for _, y in outline]
+    assert max(xs) == pytest.approx(1.0 - 0.4)  # addendum of 1 module, set back by the shift
+    assert min(xs) == pytest.approx(-0.4 - 1.25 - 2.5)
+    assert (min(ys), max(ys)) == pytest.approx((0, 3 * math.pi))
+    solid = rack(1.0, 3, 4.6, depth=2.5, shift=0.4, backlash=0.1)
+    assert not validate(solid, FDM)
+    assert solid.bounding_box().size.Z == pytest.approx(4.6)
+
+
+def test_rack_meshes_with_a_shifted_pinion_through_a_tooth_without_touching():
+    pinion = spur_gear(1.0, 10, 5, shift=0.4, backlash=0.1)
+    bar = Pos(0, -3 * math.pi, 0) * rack(1.0, 6, 5, depth=2.5, shift=0.4, backlash=0.1)
+    axis = Pos(pitch_radius(1.0, 10), 0, 0)
+    for i in range(13):
+        angle = i * 36 / 12
+        gear = axis * Rot(0, 0, angle) * pinion
+        moved = Pos(0, rack_offset(1.0, 10, angle), 0) * bar
+        assert not overlaps({"pinion": gear, "rack": moved})
+        assert 0.03 < gear.distance_to(moved) < 0.15
+    # half a pitch out of phase the same pair collides
+    wrong = Pos(0, rack_offset(1.0, 10, 0) + math.pi / 2, 0) * bar
+    assert overlaps({"pinion": axis * pinion, "rack": wrong})
+
+
+def test_rack_offset_follows_the_turn():
+    # a counter-clockwise turn of the gear carries the rack towards -Y by radius * angle
+    a, b = rack_offset(1.0, 10, 0.0), rack_offset(1.0, 10, 10.0)
+    assert (a - b) % math.pi == pytest.approx(5 * math.radians(10))
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"module": 0, "teeth": 3, "depth": 2},
+        {"module": 1, "teeth": 0, "depth": 2},
+        {"module": 1, "teeth": 3, "depth": 0},
+        {"module": 1, "teeth": 3, "depth": 2, "backlash": 1.0},
+    ],
+)
+def test_impossible_racks_are_refused(values):
+    with pytest.raises(ValueError):
+        rack_outline(**values)
