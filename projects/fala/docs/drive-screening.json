@@ -1,0 +1,25 @@
+{
+  "status": "concept_screening_only",
+  "samples_per_revolution": 1440,
+  "parameters_mm": {
+    "pitch": 22.0,
+    "amplitude": 3.5,
+    "cam_radius": 9.0
+  },
+  "max_ideal_lean_deg": 5.951343714420244,
+  "ideal_centre_travel_mm": 6.613642325268146,
+  "cam_centre_lateral_travel_mm": 7.0,
+  "narrow_pad_chord_diameter_min_mm": 16.583123951777,
+  "narrow_pad_chord_diameter_max_mm": 18.0,
+  "narrow_pad_capture_play_for_18mm_jaw_mm": 1.4168760482229992,
+  "fixed_x_edge_distance_variation_mm": 0.11921528872294829,
+  "ideal_equal_15g_units_peak_gravity_torque_mNm": 0.6742700039229448,
+  "wedge_bar_min_stroke_mm_at_30deg": 12.124355652982144,
+  "crank_centre_lateral_travel_mm": 7.0,
+  "limitations": [
+    "No BRep collision sweep, gear geometry, bearing fit or friction model",
+    "Finite cam-pad contact and helix axial slope not solved",
+    "Reversing phase retraces the prescribed path; does not prove loaded reversibility",
+    "Animation uses ideal target lean for A/B; C lean requires another constraint"
+  ]
+}

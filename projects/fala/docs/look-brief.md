@@ -1,6 +1,9 @@
 # Fala: look brief and concept checkpoint
 
-**Status: waiting for approval (step 2 of the brief). Nothing is modelled in detail yet.**
+**Status (2026-11-13): client approved Look 1 Nikisz and Drive A corkscrew shaft.**
+
+The original recommendations below are historical concept material. See the updated
+[drive comparison](drive-comparison.md) for contact constraints and the current recommendation.
 
 How to view: open this file's preview in VS Code (`Shift+Cmd+V`). The three concept looks are also
 live in the OCP CAD Viewer panel, where you can orbit them. To regenerate everything:
