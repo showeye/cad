@@ -1,7 +1,9 @@
 # Fala: design notes for the motion proof
 
-Engineering reasoning behind the look brief that is not written there. Everything here is a
-starting point for step 3 and is open to change. All dimensions in mm and degrees.
+Engineering reasoning behind the look brief that is not written there. The sections up to
+"Rejected along the way" are the plan from the concept checkpoint; the last section,
+"Motion proof: as built", is the state of the model and supersedes them where they differ.
+All dimensions in mm and degrees.
 
 ## Concept model geometry (as drawn in `concept/look_concepts.py`)
 
@@ -107,3 +109,108 @@ A house has six freedoms; two must stay free (rise and lean).
 - **Flexible pavement strip:** truly continuous ground, but PLA takes a set in heat.
 - **Houses leaning on each other for location:** rubbing contact, stick-slip risk.
 - **Face-down printed facades:** best colour inlay, but no relief, against the fixed style.
+
+## Motion proof: as built (2026-11-13, in progress)
+
+Everything above is the plan from the concept checkpoint. This section is the state of the
+model `fala` 0.3.0 (`src/fala/`), what it rests on, and what is open. Look 1 Nikisz, drive A.
+
+### The design and why
+
+- **A house is two printed parts: a sled and the house on its ground block.** The sled carries
+  every fit. It prints with its flat plate on the bed, so the noses of its pads and its guiding
+  edges are drawn by the nozzle in the plane, with no support. The house prints upright on the
+  flat underside of its block, also without support. The plan above had one part per house;
+  its pads would have been downward-facing overhangs.
+- **Crowned pads, solved exactly.** Two pads 16 apart rest on the cam. Each nose is a cylinder
+  of radius 12 with its axis front to back. The cam's sideways swing slides under it; in side
+  view the nose rides the cam's upper edge, a travelling sine. `cadkit.features.cams` solves the
+  pose from that with no sampling. Flat pads (the branch) touch on their sharp edges almost
+  all the time.
+- **Capture.** A third, crowned pad on a long arm passes under the cam. The gap is 0.45 nominal
+  and breathes from 0.3 to 0.6 over the turn, because the arm sits between the two upper pads
+  and sees the wave's curvature. A house cannot be lifted off by more than that.
+- **Ground block in place of a thin tile with skirts.** The block is 11.5 thick. Its front face
+  is the "earth" that rises behind the fixed front wall, so no separate skirt is needed and
+  the house has a flat bottom to print on.
+- **Joints that cannot be seen through.** The upper half of each block reaches over its
+  right-hand neighbour and the lower half under its left-hand one, and the whole joint steps
+  sideways behind the facades. A straight lap leaked light along the joint when seen from the
+  front; the stepped one does not. Pavement joint 0.8.
+- **Held along the street at pavement level.** A fixed blade rises through the block inside
+  the house; a short land in the block bears on its edges 1.5 below the pavement. The house
+  leans about that point, so the slab edges at a joint stay level within 0.1 and the pavement
+  reads as one ribbon. A fin on the rear panel, in a notch at the back of the block, is the
+  second point: the two together keep the house square to the street.
+- **Kept upright by gravity.** The cam stands 13 behind the house's centre of gravity, so the
+  weight tips the house forward onto a bead on the blade (front, high) and back onto the rear
+  panel through the tip of the sled's arm (rear, low). The guide sits on those two points and
+  does not cross its clearance. They lie on either side of the cam, so guide friction cannot
+  wedge the house.
+- **Drive.** Module 1 gears, 11 and 33 teeth with profile shifts +0.4 and -0.4, centres 22.
+  The cam and its gear are one part on the 4 x 200 steel axle. The handwheel shaft carries the
+  pinion on a hexagon. Turning the wheel clockwise, seen from its side, sends the wave away
+  from it.
+- **Assembly as intended:** sleds in from above, cam and axle in from the back into the open
+  jaws, rear panel on, houses dropped on from above. Not yet checked in the model.
+
+### Numbers
+
+| | |
+|---|---|
+| Size | 224 x 67 x 93 mm; base 67 deep |
+| Wave | 8 houses at 22, rise and fall 7.0, lean 6.0 degrees each way, 0.85 waves on the street |
+| Cam | radius 8, centre 3.5 off the axle, axis 27.3 behind the low facades and 24 below the pavement |
+| House | 16.4 g tall bay, 14.7 g low bay, sled included: assumed, 30 % of the solid volume |
+| Printed parts | 22: base, rear panel, cam, pinion, handwheel, knob, 8 sleds, 8 houses |
+| Bought | 1 steel axle so far; screws for the rear panel and the knob are not modelled |
+
+Force model, one pass of the wave both ways. Seat is the smallest guide force as a share of a
+house's weight (it must stay above zero); drag is the largest guide friction against a house's
+travel as a share of its weight (it must stay below one); torque is at the handwheel.
+
+| Friction | Seat | Drag | Torque, N mm |
+|---|---|---|---|
+| 0.1 | 0.22 | 0.13 | 0.5 to 1.1 |
+| 0.2 | 0.13 | 0.28 | 0.9 to 1.6 |
+| 0.3 | 0.02 | 0.49 | 1.4 to 2.3 |
+| 0.35 | lets go | 0.63 | 1.5 to 2.8 |
+| 0.45 | lets go | 1.12 | 1.9 to 4.0 |
+
+At a friction of 0.3 the handwheel needs 0.10 to 0.16 N at its knob, forward or back. These
+are model results, not measurements: the house mass and the friction are assumptions.
+
+### Open points
+
+1. **The guide at high friction (the one known defect).** Above about 0.3 the cam's drag on the
+   pads, which acts front to back, outweighs the gravity seat in part of the turn. The house
+   then rocks in its guide clearance, up to about 0.8 mm at the roof. At 0.45 the guide drag
+   passes the house's weight, so a house would hang on the way down until the capturing arm
+   pulls it. Ways forward, not yet chosen:
+   - Move the sled's spine behind the cam, jaws open to the front, everything loaded from the
+     back. Both guide points can then sit 9 above and below the pad height. In a simplified
+     side-view model (not the full one) that variant keeps a seat of about 0.18 at a friction
+     of 0.3, where the present layout keeps 0.02 to 0.10 depending on its settings. Its drag
+     at 0.45 is no better, and the base would be about 67 to 68 deep. It is not modelled.
+   - Grease on the pads: at 0.1 to 0.2 the present design has ample margin.
+   - Narrow the block's slot in front of the blade, so that a house that lets go moves less.
+   The limit is in the nature of a gravity seat: the seat needs the centre of gravity far from
+   the cam, the drag needs it near. `bead` and `cam_gap` are the two parameters that trade them.
+2. **Hidden mechanism: not yet proved.** `cadkit.visibility` has not been run. At both ends of
+   the street a shelf hides the cam, but the joint to the bookends is 3.6 and 4.0 wide.
+3. **Assembly paths: not yet checked.** The cam has to enter eight jaws at once; only the pads
+   have lead-ins.
+4. **Not designed yet:** how the house holds on its sled, how the pinion and the knob are kept
+   on, the rear panel's screws, the look of the two bookends.
+5. **Print plan to confirm:** the cam stands 190 tall; the rear panel prints on its outer face
+   (the fins have 45 degree backs for that).
+
+### Tried and dropped
+
+- **The branch's rig:** short keel (2 to 5 mm of rock at the roof), flat pads, a shoulder screw
+  for each house.
+- **Posts behind the sled's plate,** both guide points in front of the cam: guide friction then
+  feeds on itself and the house jams at a friction near 0.45.
+- **Holding the house square by the posts alone:** the push along the street, where the cam's
+  surface slopes, twists the house off one post. The rear fin replaced it.
+- **A rear guide point at the cam's height:** it would close the jaws that the cam enters.

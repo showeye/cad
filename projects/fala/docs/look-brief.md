@@ -1,6 +1,9 @@
 # Fala: look brief and concept checkpoint
 
-**Status: waiting for approval (step 2 of the brief). Nothing is modelled in detail yet.**
+**Status (2026-11-13): the motion proof (step 3) is under way on Look 1 "Nikisz" and drive A
+"corkscrew". That choice is recorded as approved by the client only on the branch
+`projects/fala/codex`; confirm it with the client. The recommendation of Look 2 below is the
+concept checkpoint as it was presented. See `../README.md` for the current state.**
 
 How to view: open this file's preview in VS Code (`Shift+Cmd+V`). The three concept looks are also
 live in the OCP CAD Viewer panel, where you can orbit them. To regenerate everything:

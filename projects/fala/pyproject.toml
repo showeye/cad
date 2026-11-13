@@ -1,0 +1,16 @@
+[project]
+name = "fala"
+version = "0.3.0"
+description = "Fala (The Wave): a hand-cranked terrace of Silesian familoks on rolling ground"
+requires-python = ">=3.12"
+dependencies = ["cadkit"]
+
+[project.entry-points."cadkit.models"]
+fala = "fala.model:model"
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
