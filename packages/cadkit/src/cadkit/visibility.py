@@ -136,6 +136,19 @@ def occluded(points: np.ndarray, view: Sequence[float], triangles: np.ndarray, c
     return hidden
 
 
+def through(points: np.ndarray, view: Sequence[float], triangles: np.ndarray, clearance=0.02):
+    """For each point: does the sight line through it along `view` miss every triangle?
+
+    True where a distant viewer sees past the model at that point: daylight through a gap.
+    A point inside a closed solid is never clear, whichever way the line runs.
+    """
+    view = np.asarray(view, float)
+    clear = ~occluded(points, view, triangles, clearance)
+    if clear.any():
+        clear[clear] = ~occluded(np.asarray(points, float)[clear], -view, triangles, clearance)
+    return clear
+
+
 def seen(points: np.ndarray, normals: np.ndarray, view, triangles: np.ndarray) -> np.ndarray:
     """For each surface point: does it face the viewer with nothing in the way?"""
     view = np.asarray(view, float) / np.linalg.norm(view)

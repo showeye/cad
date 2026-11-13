@@ -223,14 +223,21 @@ def main():
     bpy.ops.wm.save_as_mainfile(filepath=str(out / "presentation.blend"))
     if data["poses"] and data.get("animate", True):
         scene.render.engine = "CYCLES"
-        scene.cycles.samples = film.get("samples", 12)
-        scene.render.resolution_x, scene.render.resolution_y = film.get("size", (850, 610))
-        (out / "frames").mkdir(exist_ok=True)
-        for i in range(len(data["poses"])):
-            scene.frame_set(1 + i * 2)
-            scene.render.filepath = str(out / "frames" / f"{i:03}.png")
-            bpy.ops.render.render(write_still=True)
-            print("FRAME", i, flush=True)
+        # the main film, then any further films of the same poses: other views, parts hidden
+        films = {"frames": film}
+        films.update({f"frames_{name}": extra for name, extra in spec.get("films", {}).items()})
+        for folder, film in films.items():
+            scene.frame_set(1)
+            hide(film.get("hide", ()))
+            view(views[film.get("view", "hero")])
+            scene.cycles.samples = film.get("samples", 12)
+            scene.render.resolution_x, scene.render.resolution_y = film.get("size", (850, 610))
+            (out / folder).mkdir(exist_ok=True)
+            for i in range(len(data["poses"])):
+                scene.frame_set(1 + i * 2)
+                scene.render.filepath = str(out / folder / f"{i:03}.png")
+                bpy.ops.render.render(write_still=True)
+                print("FRAME", folder, i, flush=True)
 
 
 if __name__ == "__main__":

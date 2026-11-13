@@ -10,6 +10,8 @@ from cadkit.visibility import (
     seen_points,
     sphere_views,
     surface_samples,
+    through,
+    triangles_of,
     view_vector,
     visible_share,
 )
@@ -62,3 +64,18 @@ def test_occlusion_ignores_what_lies_behind_and_touching():
     points = np.array([[0, 1, 0], [0, -1, 0], [20, 1, 0], [0, 0.01, 0]], float)
     hidden = occluded(points, view_vector(0, 0), triangle)
     assert hidden.tolist() == [True, False, False, False]
+
+
+def test_daylight_through_a_slot_but_not_through_a_staggered_one():
+    wall = Box(40, 2, 40) - Box(4, 4, 40)
+    points = np.array([[x, 0.0, 0.0] for x in (-3.0, -1.0, 0.0, 1.5, 3.0)])
+    front = view_vector(0, 0)
+    # straight on, the sight lines through the 4 mm slot are clear; those in the wall are not
+    assert through(points, front, triangles_of([wall])).tolist() == [False, True, True, True, False]
+    # a second wall behind, its slot 3 mm to the side: only 1 mm of the two slots is in line
+    pair = [wall, Pos(3, 10, 0) * wall]
+    assert through(points, front, triangles_of(pair)).tolist() == [False, False, False, True, False]
+    # from 45 degrees to the side every line through the first slot ends on the second wall
+    assert not through(points, view_vector(45, 0), triangles_of(pair)).any()
+    # and a point inside a solid is never clear
+    assert not through(np.zeros((1, 3)), front, triangles_of([Box(10, 10, 10)])).any()

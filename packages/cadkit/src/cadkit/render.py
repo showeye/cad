@@ -9,7 +9,10 @@ parameters that returns one. Every key is optional:
   "scale"} in metres, or fitted to what it shows, {"azimuth", "elevation"} in degrees with
   optional "margin", "fit" (name prefixes to frame) or "box" (corners in mm). Any view may add
   "size" (pixels), "frame" (index of an animation pose to show) and "hide" (name prefixes);
-- "animation": {"view", "size", "samples", "hide", "frame_ms", "loop"}: the motion frames;
+- "animation": {"view", "size", "samples", "hide", "frame_ms", "loop"}: the motion frames,
+  packaged as motion.gif;
+- "films": {name: film}: further films of the same poses, each with the keys of "animation"
+  (another view, parts hidden), packaged as <name>.gif;
 - "materials": {name prefix: {"roughness", "coat", "colour"}}; "lights", "light_target",
   "world", "world_strength", "samples".
 Without it the scene is the neutral studio the first product was rendered in.
@@ -91,14 +94,17 @@ def finish_presentation(out, name, version, animate=True, spec=None):
     """Package rendered frames, contact sheet and artifact hashes after Blender exits."""
     out = Path(out)
     spec = spec or {}
-    film = spec.get("animation", {})
-    frames = sorted((out / "frames").glob("*.png"))
-    if film.get("loop") and len(frames) > 1:
-        frames = frames[:-1]  # the last pose repeats the first
-    if animate and frames:
+    films = {"motion": ("frames", spec.get("animation", {}))}
+    films.update({name: (f"frames_{name}", film) for name, film in spec.get("films", {}).items()})
+    for gif, (folder, film) in films.items():
+        frames = sorted((out / folder).glob("*.png"))
+        if film.get("loop") and len(frames) > 1:
+            frames = frames[:-1]  # the last pose repeats the first
+        if not (animate and frames):
+            continue
         images = [Image.open(f).convert("RGB") for f in frames]
         images[0].save(
-            out / "motion.gif",
+            out / f"{gif}.gif",
             save_all=True,
             append_images=images[1:],
             duration=film.get("frame_ms", 100),
