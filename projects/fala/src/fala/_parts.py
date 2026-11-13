@@ -58,23 +58,36 @@ def gear_x(gear, x, angle):
 # ---------------------------------------------------------------- the sled
 def sled(p):
     """One printed sled, about X = 0: guide plate with its tongue, bar with two crowned pads,
-    and the long arm that passes under the cam, captures it and bears on the rear panel.
+    two short arms that pass under the cam with a crowned pad each, and the centre arm that
+    reaches the rear panel.
+
+    The lower pads stand under the upper ones, so the cam is held between them with the same
+    small gap through the whole turn: if friction ever keeps a house from following by its
+    weight, the cam takes it along, down and into its lean, within that gap.
 
     It prints with the plate's front face on the bed, so every pad nose and every guiding
     edge is drawn by the nozzle in the plane and no face needs support.
     """
     L = layout(p)
     hw, aw = p.sled_width / 2, p.arm_width / 2
+    cw, cx = p.capture_width / 2, p.capture_span / 2
     y0, y1, y2 = L.plate_y0, L.plate_y1, L.bar_y1
     bar_z = L.pad_z + p.pad_relief
+    sag = LOW_CROWN - math.sqrt(LOW_CROWN**2 - cw**2)
+    foot_z = L.low_z - sag  # top of the foot and of the arms, below the pad noses
+    stem = aw + 0.6
     plate = prism_y(
         [
             (-hw, L.block_z),
             (-hw, bar_z),
-            (-aw - 0.6, bar_z),
-            (-aw - 0.6, L.arm_z),
-            (aw + 0.6, L.arm_z),
-            (aw + 0.6, bar_z),
+            (-stem, bar_z),
+            (-stem, foot_z),
+            (-cx - cw, foot_z),
+            (-cx - cw, L.arm_z),
+            (cx + cw, L.arm_z),
+            (cx + cw, foot_z),
+            (stem, foot_z),
+            (stem, bar_z),
             (hw, bar_z),
             (hw, L.block_z),
             (p.tongue / 2, L.block_z),
@@ -92,15 +105,26 @@ def sled(p):
         body += nose & box(
             x - p.pad_width / 2, x + p.pad_width / 2, y1, y2, L.pad_z - 1, bar_z + 0.3
         )
-    # the arm: crowned on top where the cam passes over it, rounded at its rear tip
-    sag = LOW_CROWN - math.sqrt(LOW_CROWN**2 - aw**2)
+        # a capturing arm under the cam, crowned on top where the cam passes over it
+        x = side * cx
+        body += box(x - cw, x + cw, y1, y2, L.arm_z, foot_z)
+        body += rod_y(LOW_CROWN, y1, y2, x, L.low_z - LOW_CROWN) & box(
+            x - cw, x + cw, y1, y2, foot_z - 0.2, L.low_z + 1
+        )
+    # the neighbour's lower lap reaches in over the bar's edge: a rebate keeps clear of it
+    for side in (-1, 1):
+        body -= box(
+            *sorted((side * (hw - p.jog - 2.0), side * (hw + 0.1))),
+            y0 - 0.1,
+            y2 + 0.1,
+            L.block_z - 0.8,
+            L.block_z + 0.1,
+        )
+    # the centre arm: clear of the cam, rounded at its rear tip where it bears on the panel
     tip = p.arm / 2
-    body += box(-aw, aw, y1, L.tip_y - tip, L.arm_z, L.low_z - sag)
-    body += rod_y(LOW_CROWN, y1, y2, 0, L.low_z - LOW_CROWN) & box(
-        -aw, aw, y1, y2, L.low_z - sag - 0.2, L.low_z + 1
-    )
+    body += box(-aw, aw, y1, L.tip_y - tip, L.arm_z, foot_z)
     body += rod_x(tip, -aw, aw, L.tip_y - tip, L.tip_z) & box(
-        -aw, aw, L.tip_y - tip - 0.1, L.tip_y, L.arm_z, L.low_z - sag
+        -aw, aw, L.tip_y - tip - 0.1, L.tip_y, L.arm_z, foot_z
     )
     # lead-ins at the open rear end, so the cam finds its way in at assembly
     lead = 1.5
@@ -109,6 +133,12 @@ def sled(p):
         -hw - 1,
         hw + 1,
     )
+    for side in (-1, 1):
+        body -= prism_x(
+            [(y2 + 0.1, L.low_z + 1), (y2 + 0.1, L.low_z - lead), (y2 - lead, L.low_z + 1)],
+            side * cx - cw - 0.1,
+            side * cx + cw + 0.1,
+        )
     return body
 
 
@@ -186,27 +216,31 @@ def base(p):
     part += box(x0, L.wall_x0, L.front_y, L.rear_y, bottom, L.rim_z)
     part += box(L.wall_x1, L.gear_x0 - 0.8, L.front_y, L.rear_y, bottom, L.rim_z)
     part += box(L.end_x, x1, L.front_y, L.rear_y, bottom, L.rim_z)
-    # guide rail with one blade per house; the bead near its top is where a sled leans on it
+    # guide rail with one blade per house. A blade has its full width where the block's lands
+    # ride on its edges, then narrows and rises into the house. Near its top, the rear bead is
+    # where the sled's tongue leans on it; the front bead stops a house that leaves that seat.
     part += box(L.wall_x0 - 0.1, L.wall_x1 + 0.1, L.blade_y0, L.blade_y1, L.floor_z - 0.1, L.rail_z)
+    hw, tw = p.blade_width / 2, min(p.blade_tip, p.blade_width) / 2
+    taper = L.land_z + (hw - tw)  # 45 degrees: an end house needs the play early, to hook in
+    outline = [(-hw, L.rail_z - 0.1), (hw, L.rail_z - 0.1), (hw, L.land_z)]
+    if L.blade_z > taper:
+        outline += [(tw, taper), (tw, L.blade_z), (-tw, L.blade_z), (-tw, taper)]
+    else:
+        tw = hw
+    outline += [(-hw, L.land_z)]
+    blade = prism_y(outline, L.blade_y0, L.blade_y1)
+    blade += _bead(-tw, tw, L.blade_y1 - BEAD_RADIUS + BEAD, p.bead)
+    blade += _bead(-tw, tw, L.blade_y0 + BEAD_RADIUS - BEAD, p.bead)
     for x in L.centres:
-        hw = p.blade_width / 2
-        part += box(x - hw, x + hw, L.blade_y0, L.blade_y1, L.rail_z - 0.1, L.blade_z)
-        part += _bead(x - hw, x + hw, L.blade_y1 - BEAD_RADIUS + BEAD, p.bead)
-    # a shelf at each end of the street, under the last block's lap: nothing shows down the gap
-    for a, b in ((L.wall_x0 - 0.1, L.cam_x0 - 0.4), (L.cam_x1 + 0.4, L.wall_x1 + 0.1)):
-        part += box(a, b, L.wall_y - 0.1, L.rear_y, L.rail_z - 1.5, L.rail_z)
+        part += Pos(x, 0, 0) * blade
+    # low stop along the rail: the sled's stem meets it if the foot of a house swings forward
+    proud = BEAD + p.guide_gap - p.stop_gap
+    if proud > 0.05:
+        part += _bead(L.wall_x0, L.wall_x1, L.blade_y1 - BEAD_RADIUS + proud, L.stop_z)
     # bookends above the rim: a low wall on the left, the engine house over the gears
     shell = p.shell
-    left = box(x0, -L.half - p.clear_low, L.front_y, L.rear_y, L.rim_z - 0.1, p.wall_height)
-    left -= box(
-        x0 + shell,
-        -L.half - p.clear_low - shell,
-        L.front_y + shell,
-        L.rear_y - shell,
-        L.rim_z - 1,
-        p.wall_height - shell,
-    )
-    right = box(L.half + p.clear_high, x1, L.front_y, L.rear_y, L.rim_z - 0.1, p.engine_height)
+    left = box(x0, L.recess_x0, L.front_y, L.rear_y, L.rim_z - 0.1, p.wall_height)
+    right = box(L.recess_x1, x1, L.front_y, L.rear_y, L.rim_z - 0.1, p.engine_height)
     right -= box(
         L.gear_x0 - 0.8,
         L.end_x,
@@ -216,6 +250,28 @@ def base(p):
         p.engine_height - shell,
     )
     part += left + right
+    # The pavement of each end house runs on to the bookend, where a pocket below the rim
+    # takes the edge of its block. A sight line down the joint between that edge and the
+    # bookend is held between two faces 12 deep, so it ends on the pocket's floor. A corbel
+    # carries that floor on towards the cam's end, for the lines that slant most.
+    for back, wall, cam_end in (
+        (L.recess_x0, L.wall_x0, L.wall_x0 + 1.1),
+        (L.recess_x1, L.wall_x1, L.wall_x1 - 1.1),
+    ):
+        side = 1.0 if back > 0 else -1.0  # which way is out of the street
+        part -= box(
+            *sorted((wall - side * 0.1, back)), L.wall_y, L.rear_y + 1, L.rail_z, L.rim_z + 0.1
+        )
+        reach = abs(wall - cam_end)
+        part += prism_y(
+            [
+                (wall + side * 0.1, L.rail_z - reach),
+                (wall + side * 0.1, L.rail_z),
+                (cam_end, L.rail_z),
+            ],
+            L.wall_y - 0.1,
+            L.rear_y,
+        )
     # crank bearing: a boss on the end wall, bored through
     part += rod_x(SHAFT / 2 + 3, x1 - 0.1, x1 + p.boss, L.crank_y, L.crank_z)
     part -= rod_x((SHAFT + p.crank_fit) / 2, L.end_x - 1, x1 + p.boss + 1, L.crank_y, L.crank_z)
@@ -251,10 +307,10 @@ def rear_panel(p):
         fin = prism_x(
             [
                 (L.fin_y0, L.rim_z - 2),
-                (L.fin_y0, L.blade_z),
-                (L.fin_y1, L.blade_z),
-                (L.fin_y1 + L.blade_z - L.rim_z, L.rim_z - 0.1),
-                (L.fin_y1 + L.blade_z - L.rim_z, L.rim_z - 2),
+                (L.fin_y0, L.land_z),
+                (L.fin_y1, L.land_z),
+                (L.fin_y1 + L.land_z - L.rim_z, L.rim_z - 0.1),
+                (L.fin_y1 + L.land_z - L.rim_z, L.rim_z - 2),
             ],
             x - hw,
             x + hw,

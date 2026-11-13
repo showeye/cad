@@ -12,19 +12,20 @@ import numpy as np
 
 from fala._layout import layout
 
-LOW_CROWN = 5.0  # nose radius of the lower, capturing pad
+LOW_CROWN = 5.0  # nose radius of the lower, capturing pads
 
 
 @dataclass(frozen=True)
 class Pose:
-    """One unit: its pivot, lean, the two touching points and the gap under the cam."""
+    """One unit: its pivot, lean, the two touching points and the gaps under the cam."""
 
     x: float
     z: float
     rise: float
     lean: float
     contacts: tuple
-    gap: float
+    gap: float  # the smaller of the two gaps under the cam
+    gaps: tuple = ()
 
 
 def phase(p, turn: float | None = None) -> float:
@@ -44,10 +45,11 @@ def pads(p) -> list[tuple[float, float]]:
     return [(-p.pad_span / 2, w), (p.pad_span / 2, w)]
 
 
-def low_pad(p) -> tuple[float, float]:
-    """Nose centre of the lower pad in the unit's frame."""
+def low_pads(p) -> list[tuple[float, float]]:
+    """Nose centres of the two lower pads in the unit's frame: one under each upper pad."""
     L = layout(p)
-    return (0.0, L.low_z - LOW_CROWN - L.pivot_z)
+    w = L.low_z - LOW_CROWN - L.pivot_z
+    return [(-p.capture_span / 2, w), (p.capture_span / 2, w)]
 
 
 def pose(p, index: int, turn: float | None = None) -> Pose:
@@ -55,10 +57,23 @@ def pose(p, index: int, turn: float | None = None) -> Pose:
     L = layout(p)
     x, angle = L.centres[index], phase(p, turn)
     seat = L.cam.seat(x, angle, pads(p), p.pad_crown)
-    gap = L.cam.gap_below(x, angle, seat.height, seat.lean, low_pad(p), LOW_CROWN)
+    gaps = [
+        L.cam.gap_below(x, angle, seat.height, seat.lean, pad, LOW_CROWN) for pad in low_pads(p)
+    ]
     contacts = tuple((cx, cy + L.cam_y, cz + L.cam_z) for cx, cy, cz in seat.contacts)
     z = L.cam_z + seat.height
-    return Pose(x, z, z - L.pivot_z, seat.lean, contacts, gap)
+    return Pose(x, z, z - L.pivot_z, seat.lean, contacts, min(gaps), tuple(gaps))
+
+
+def crest(p, index: int) -> float:
+    """Crank angle, in degrees within one pass of the wave, at which unit `index` stands on
+    the crest: at its highest and upright, its left-hand neighbour leaning away from it.
+
+    This is where a house is put in. From one unit to the next it is the same step of the
+    crank: `ratio` times the wave's phase step per house, a third of a turn for the Nikisz.
+    """
+    L = layout(p)
+    return p.ratio * ((math.degrees(L.cam.k * L.centres[index]) + 270.0) % 360.0)
 
 
 def unit_matrix(p, index: int, turn: float | None = None) -> np.ndarray:

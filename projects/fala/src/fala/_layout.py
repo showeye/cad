@@ -33,7 +33,9 @@ class Layout:
     floor_z: float  # top of the base floor
     rim_z: float  # top of the fixed front wall
     rail_z: float  # top of the fixed front rail between the blades
+    land_z: float  # up to here a blade has its full width: the block's lands ride on its edges
     blade_z: float  # top of the blades
+    stop_z: float  # height of the low stop on the rail, in front of the sled's stem
     tongue_z: float  # top of the sled's tongue
     tip_z: float  # height of the sled's rear tip, where it bears on the rear panel
     # depths
@@ -44,6 +46,7 @@ class Layout:
     fin_y0: float  # front face of the rear panel's locating fins
     fin_y1: float
     deck_y: float  # front edge of the rear panel's deck
+    slot_y0: float  # front wall of the guide slot through block and house
     blade_y0: float
     blade_y1: float
     plate_y0: float
@@ -61,6 +64,10 @@ class Layout:
     pinion_tip: float
     cam_x0: float
     cam_x1: float
+    edge_x0: float  # outer edge of the first house's pavement
+    edge_x1: float  # outer edge of the last house's pavement
+    recess_x0: float  # inner face of the left bookend: the back of the pocket for that edge
+    recess_x1: float  # inner face of the engine house
     wall_x0: float  # inner face of the left end wall
     wall_x1: float  # inner face of the wall between street and gears
     gear_x0: float
@@ -97,8 +104,14 @@ def layout(p) -> Layout:
     crank_y = cam_y - spacing * math.cos(math.radians(mesh))
     crank_z = cam_z - spacing * math.sin(math.radians(mesh))
     rear_y = cam_y + gear_tip + 0.6
-    wall_x1 = half + p.end_gap + p.jog / 2  # the last block's lap reaches further this way
-    gear_x0 = wall_x1 + p.wall + 0.8
+    wall_x1 = half + p.end_gap
+    # The pavement of the two end houses runs on past the street, into a pocket in front of
+    # each bookend. The pocket leaves room for the edge's swing: a house leans about the
+    # pavement, so the foot of its block swings along the street.
+    edge_x0, edge_x1 = -half - p.end_reach, half + p.end_reach
+    room = (p.block - p.pivot_drop) * cam.eccentricity * cam.k + 0.5
+    recess_x0, recess_x1 = edge_x0 - room, edge_x1 + room
+    gear_x0 = max(wall_x1 + p.wall, recess_x1 + 1.6) + 0.8
     gear_x1 = gear_x0 + p.gear_face
     end_x = gear_x1 + 1.2
     out_x1 = end_x + p.end_wall
@@ -117,7 +130,9 @@ def layout(p) -> Layout:
         floor_z=arm_z - p.amplitude - 1.0,
         rim_z=-p.rim,
         rail_z=block_z - p.amplitude - LEAN_DIP - 0.6,
+        land_z=-p.pivot_drop + p.amplitude + 1.0,
         blade_z=max(-p.pivot_drop + p.amplitude + 1.0, p.bead + 1.2),
+        stop_z=arm_z + p.amplitude + 0.7,
         tongue_z=p.bead + p.amplitude + 1.5,
         tip_z=low_z - p.arm / 2,
         front_y=p.block_front - 0.4 - p.wall,
@@ -127,6 +142,7 @@ def layout(p) -> Layout:
         fin_y0=p.block_back - p.fin + 0.7,
         fin_y1=p.block_back + 0.7,
         deck_y=p.block_back + 0.6,
+        slot_y0=blade_y0 - BEAD - (p.stop_gap - p.guide_gap / 2),
         blade_y0=blade_y0,
         blade_y1=blade_y1,
         plate_y0=plate_y0,
@@ -143,13 +159,17 @@ def layout(p) -> Layout:
         pinion_tip=pinion_tip,
         cam_x0=-half - 0.5,
         cam_x1=half + 0.5,
+        edge_x0=edge_x0,
+        edge_x1=edge_x1,
+        recess_x0=recess_x0,
+        recess_x1=recess_x1,
         wall_x0=-half - p.end_gap,
         wall_x1=wall_x1,
         gear_x0=gear_x0,
         gear_x1=gear_x1,
         end_x=end_x,
         out_x1=out_x1,
-        out_x0=axle_x0 - 2.0,
+        out_x0=min(axle_x0 - 2.0, recess_x0 - 2.4),
         axle_x0=axle_x0,
         axle_x1=axle_x1,
         wheel_x=out_x1 + p.boss + 0.6,

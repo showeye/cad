@@ -1,16 +1,19 @@
 """Forces on a moving unit and the torque at the crank: a rigid, quasi-static friction model.
 
 Each unit is held at six places. Its two pads rest on the cam. The blade's edge in front and
-the rear panel's fin behind hold it along the street and square to it. The blade's bead on
-the sled's tongue, high in front, and the rear panel against the sled's tip, low behind,
-hold it upright. That is exactly as many as a rigid body needs, so the forces follow from
-equilibrium with no assumption about stiffness.
+the rear panel's fin behind hold it along the street and square to it. The blade's rear bead
+on the sled's tongue, high inside the house, and the rear panel against the sled's tip, low
+behind the cam, hold it upright. That is exactly as many as a rigid body needs, so the forces
+follow from equilibrium with no assumption about stiffness.
 
 Because the cam stands behind the unit's centre of gravity, the weight tips the unit forward
-onto the bead and back onto the panel: the guide is seated by gravity on the same two points
-through the whole turn, and its clearance is never crossed. The two points lie on either
-side of the cam, so friction in the guide cannot wedge the unit. `forces` reports whether
-the seat holds for a given friction: both pads and both guide points must push.
+onto the bead and back onto the panel: at ordinary friction the guide is seated by gravity on
+those two points through the whole turn. The cam's skin also drags the pads front to back.
+At high friction that drag can lift a guide point off its seat; the unit then meets a stop
+after `stop_gap`: the blade's front bead against the wall of the house's slot, or the rail's
+low bead against the sled's stem. `forces` finds which of the four states holds and reports
+it. The two seats lie on either side of the cam and far apart in height, so guide friction
+stays a small share of the weight and cannot wedge the unit.
 
 What this is not: a measurement. The house mass is an assumed share of its solid volume, the
 friction coefficients are inputs, and inertia is left out (at one crank turn a second the
@@ -38,20 +41,29 @@ AXLE_FRICTION = 0.25  # printed cam on its steel axle: an assumption
 
 @dataclass(frozen=True)
 class UnitForces:
-    """Contact forces on one unit in newtons; `seated` when the guide stays on its beads."""
+    """Contact forces on one unit in newtons, and which contacts carry them."""
 
-    pads: tuple[float, float]
+    pads: tuple[float, float]  # the two upper pads, resting on the cam
     locators: tuple[float, float]  # along the street, at the blade and at the fin; either sign
-    blade: float
-    panel: float
+    blade: float  # upper seat: the blade's rear bead on the tongue; 0 once the unit has left it
+    panel: float  # lower seat: the rear panel on the sled's tip
+    stops: tuple[float, float]  # upper and lower stop; both 0 while the guide is seated
     weight: float
     guide_drag: float  # friction in the guide that opposes the unit's travel, as a share of weight
     torque: float  # at the cam, along its motion, N mm
     load: tuple[float, float]  # Y and Z force of the unit on the cam, N
+    free: bool = True  # False when no set of contacts balances the unit: it is wedged
+    low: tuple[float, float] = (0.0, 0.0)  # the two lower pads; 0 unless the cam pulls the unit
+
+    @property
+    def carried(self) -> bool:
+        """Resting on both upper pads by its own weight: the cam does not have to pull."""
+        return self.free and self.low == (0.0, 0.0) and min(self.pads) > 0
 
     @property
     def seated(self) -> bool:
-        return min(*self.pads, self.blade, self.panel) > 0
+        """Carried, and on both gravity seats of the guide."""
+        return self.carried and self.stops == (0.0, 0.0) and min(self.blade, self.panel) > 0
 
 
 @lru_cache(maxsize=16)
@@ -64,6 +76,12 @@ def unit_mass(p, which: str, shell: float = SHELL) -> tuple[float, tuple[float, 
     total = sum(masses)
     centre = sum(m * c for m, c in zip(masses, centres)) / total
     return total, tuple(float(v) for v in centre)
+
+
+@lru_cache(maxsize=8)
+def _cam_weight(p) -> float:
+    """Weight of the printed cam in newtons, at 60 % of its solid volume: an assumption."""
+    return parts.cam(p).volume * PLA * GRAVITY * 0.6
 
 
 def _rate(p, index, turn, direction, step=0.05):
@@ -89,7 +107,7 @@ def forces(
     theta = math.radians(at.lean)
     c, s = math.cos(theta), math.sin(theta)
     rise_rate, lean_rate = _rate(p, index, turn, direction)
-    mass, (gx, gy, gz) = unit_mass(p, massing.kind(index), shell)
+    mass, (gx, gy, gz) = unit_mass(p, massing.kind(p, index), shell)
     weight = mass * GRAVITY
     pivot = np.array([at.x, 0.0, at.z])
 
@@ -112,62 +130,131 @@ def forces(
         size = np.linalg.norm(slide)
         return slide / size if size > 1e-12 else np.zeros(3)
 
-    contacts = []  # (point, normal force direction, friction direction, coefficient)
     phase = wave.phase(p, turn)
-    for cx, cy, cz in at.contacts:
+
+    def on_cam(cx, cy, cz, upper):  # (point, normal force direction, friction direction)
         point = np.array([cx, cy, cz])
         slope = math.atan(L.cam.slope(cx, phase))
-        normal = np.array([-math.sin(slope), 0.0, math.cos(slope)])
+        side = 1.0 if upper else -1.0
+        normal = side * np.array([-math.sin(slope), 0.0, math.cos(slope)])
         surface = direction * np.array([0.0, cz - L.cam_z, -(cy - L.cam_y)])  # the cam's skin
-        contacts.append((point, normal, rub(point, normal, surface), mu_pad))
+        return point, normal, rub(point, normal, surface)
+
+    above = [on_cam(cx, cy, cz, True) for cx, cy, cz in at.contacts]
+    below = []  # where each lower pad would meet the underside of the cam
+    for u, w in wave.low_pads(p):
+        cx = world(u, 0.0, w + wave.LOW_CROWN)[0]  # the top of the nose
+        centre_y, _ = L.cam.centre(cx, phase)
+        below.append(
+            on_cam(cx, L.cam_y + centre_y, L.cam_z + L.cam.crest(cx, phase, upper=False), False)
+        )
     front = np.array([at.x, (L.blade_y0 + L.blade_y1) / 2, at.z])
     rear = np.array([at.x, (L.fin_y0 + L.block_y1) / 2, at.z])
-    lift = p.bead - at.z
-    top = np.array([at.x - lift * s / c, L.plate_y0, p.bead])  # on the tongue's centre line
-    low = world(0.0, L.rear_y, L.tip_z - L.pivot_z)  # the sled's rear tip on the rear panel
     ahead, behind = np.array([0.0, 1.0, 0.0]), np.array([0.0, -1.0, 0.0])
     along = np.array([1.0, 0.0, 0.0])
-    beads = [(top, ahead, rub(top, ahead)), (low, behind, rub(low, behind))]
 
+    def on_axis(y, z):  # the point of the unit's centre line that is at height z
+        return np.array([at.x - (z - at.z) * s / c, y, z])
+
+    # the two seats, then the stop each guide point meets when it leaves its seat
+    upper = [(on_axis(L.plate_y0, p.bead), ahead), (on_axis(L.slot_y0, p.bead), behind)]
+    lower = [
+        (world(0.0, L.rear_y, L.tip_z - L.pivot_z), behind),
+        (on_axis(L.plate_y0, L.stop_z), ahead),
+    ]
     centre = world(gx, gy, gz - L.pivot_z)
     rhs = np.concatenate([[0, 0, weight], np.cross(centre - pivot, [0, 0, weight])])
-    solution, signs = None, (1, 1)
-    for signs in ((1, 1), (-1, -1), (1, -1), (-1, 1)):  # which side each locator bears on
-        columns = [n + mu * t for _, n, t, mu in contacts]
-        columns += [
-            along + sign * mu_guide * rub(q, along) for sign, q in zip(signs, (front, rear))
-        ]
-        columns += [n + mu_guide * t for _, n, t in beads]
-        points = [contacts[0][0], contacts[1][0], front, rear, top, low]
-        matrix = np.zeros((6, 6))
-        for k, (point, column) in enumerate(zip(points, columns)):
-            matrix[:3, k] = column
-            matrix[3:, k] = np.cross(point - pivot, column)
-        solution = np.linalg.solve(matrix, rhs)
-        if solution[2] * signs[0] >= 0 and solution[3] * signs[1] >= 0:
+
+    def balance(pair, top, low):
+        """Forces for one choice of contacts, or None when one of them would have to pull."""
+        beads = [(q, n, rub(q, n)) for q, n in (top, low)]
+        for signs in ((1, 1), (-1, -1), (1, -1), (-1, 1)):  # which side each locator bears on
+            columns = [n + mu_pad * t for _, n, t in pair]
+            columns += [
+                along + sign * mu_guide * rub(q, along) for sign, q in zip(signs, (front, rear))
+            ]
+            columns += [n + mu_guide * t for _, n, t in beads]
+            points = [pair[0][0], pair[1][0], front, rear, top[0], low[0]]
+            matrix = np.zeros((6, 6))
+            for k, (point, column) in enumerate(zip(points, columns)):
+                matrix[:3, k] = column
+                matrix[3:, k] = np.cross(point - pivot, column)
+            try:
+                found = np.linalg.solve(matrix, rhs)
+            except np.linalg.LinAlgError:
+                continue
+            if found[2] * signs[0] >= 0 and found[3] * signs[1] >= 0:
+                return (found, beads) if min(found[0], found[1], found[4], found[5]) >= 0 else None
+        return None
+
+    # Which two places on the cam carry the unit: both upper pads; then one upper pad with the
+    # lower pad of the other side (the cam turns the unit into its lean); then both lower pads
+    # (the cam pulls the unit down). For each, the guide seated first, then on one or both stops.
+    pairs = [
+        ((above[0], above[1]), (0, 0)),
+        ((above[0], below[1]), (0, 2)),
+        ((below[0], above[1]), (1, 0)),
+        ((below[0], below[1]), (1, 2)),
+    ]
+    guides = [(0, 0), (1, 0), (0, 1), (1, 1)]
+    solution = None
+    for pair, pulled in pairs:
+        for state in guides:
+            if (result := balance(pair, upper[state[0]], lower[state[1]])) is not None:
+                solution, beads = result
+                break
+        if solution is not None:
             break
-    n1, n2, hold_a, hold_b, blade, panel = (float(v) for v in solution)
+    if solution is None:
+        return UnitForces(
+            (0.0, 0.0),
+            (0.0, 0.0),
+            0.0,
+            0.0,
+            (0.0, 0.0),
+            weight,
+            math.inf,
+            math.inf,
+            (0.0, 0.0),
+            False,
+        )
+    n1, n2, hold_a, hold_b, top, low = (float(v) for v in solution)
     torque, load = 0.0, np.zeros(3)
-    for size, (point, normal, friction, mu) in zip((n1, n2), contacts):
-        push = size * (normal + mu * friction)
+    for size, (point, normal, friction) in zip((n1, n2), pair):
+        push = size * (normal + mu_pad * friction)
         surface = direction * np.array([0.0, point[2] - L.cam_z, -(point[1] - L.cam_y)])
         torque += push @ surface
         load -= push
-    drag = sum(abs(size) * mu_guide * abs(t[2]) for size, (_, _, t) in zip((blade, panel), beads))
+    drag = sum(abs(size) * mu_guide * abs(t[2]) for size, (_, _, t) in zip((top, low), beads))
     drag += sum(
         abs(size) * mu_guide * abs(rub(q, along)[2])
         for size, q in zip((hold_a, hold_b), (front, rear))
     )
     return UnitForces(
-        (n1, n2),
+        (0.0 if pulled[0] else n1, 0.0 if pulled[1] else n2),
         (hold_a, hold_b),
-        blade,
-        panel,
+        top if state[0] == 0 else 0.0,
+        low if state[1] == 0 else 0.0,
+        (top if state[0] else 0.0, low if state[1] else 0.0),
         weight,
         float(drag / weight),
         float(torque),
         (float(load[1]), float(load[2])),
+        True,
+        (n1 if pulled[0] else 0.0, n2 if pulled[1] else 0.0),
     )
+
+
+def roof_play(p, height: float = massing.A_ROOF[3]) -> tuple[float, float]:
+    """How far a roof at `height` moves front to back when a guide point goes to its stop.
+
+    First value: the upper point leaves the blade's bead and the unit turns about the sled's
+    tip. Second: the lower point leaves the rear panel and the unit turns about the bead.
+    """
+    L = layout(p)
+    upper = p.stop_gap * (height - L.tip_z) / (p.bead - L.tip_z)
+    lower = p.stop_gap * (height - p.bead) / (p.bead - L.stop_z)
+    return upper, lower
 
 
 def crank_torque(
@@ -175,7 +262,7 @@ def crank_torque(
 ) -> float:
     """Torque at the handwheel in N mm to keep turning slowly, friction and gear loss included."""
     units = [forces(p, i, turn, direction, mu, mu, shell) for i in range(p.houses)]
-    cam = parts.cam(p.model_copy(update={"turn": 0.0})).volume * PLA * GRAVITY * 0.6
+    cam = _cam_weight(p.model_copy(update={"turn": 0.0}))
     side = sum(u.load[0] for u in units)
     down = sum(u.load[1] for u in units) - cam
     bearing = AXLE_FRICTION * math.hypot(side, down) * p.axle / 2
@@ -183,23 +270,31 @@ def crank_torque(
 
 
 def survey(p, mu: float = 0.3, step: float = 15.0, shell: float = SHELL) -> dict:
-    """One pass of the wave, forward and back: how firmly the guide sits and what the crank needs."""
-    seat, drag, torque, lost = [], [], {1: [], -1: []}, 0
+    """One pass of the wave, forward and back: how the units sit and what the crank needs."""
+    seat, pad, drag, torque = [], [], [], {1: [], -1: []}
+    lost, pulled, wedged = 0, 0, 0
     turns = np.arange(0.0, 360.0 * p.ratio, step)
     for direction in (1, -1):
         for turn in turns:
             for i in range(p.houses):
                 unit = forces(p, i, float(turn), direction, mu, mu, shell)
                 seat.append(min(unit.blade, unit.panel) / unit.weight)
-                drag.append(unit.guide_drag)
-                lost += not unit.seated
+                pad.append(min(unit.pads) / unit.weight)
+                wedged += not unit.free
+                pulled += unit.free and not unit.carried
+                lost += unit.carried and not unit.seated
+                if unit.free:
+                    drag.append(unit.guide_drag)
             torque[direction].append(crank_torque(p, float(turn), direction, mu, shell))
     every = torque[1] + torque[-1]
     return {
         "friction": mu,
-        "seat_min": min(seat),  # smallest guide force, as a share of the unit's weight
-        "drag_max": max(drag),  # largest guide friction against the travel, share of weight
-        "unseated": lost,
+        "seat_min": min(seat),  # smallest force on a guide seat, as a share of the unit's weight
+        "pad_min": min(pad),  # smallest force on an upper pad, as a share of the unit's weight
+        "drag_max": max(drag, default=math.inf),  # guide friction against the travel, of weight
+        "unseated": lost / len(seat),  # share of poses with a guide point on its stop
+        "pulled": pulled / len(seat),  # share of poses in which the cam pulls on a lower pad
+        "wedged": wedged,  # poses with no balance at all: must be zero
         "torque_mean": float(np.mean(every)),
         "torque_min": min(every),
         "torque_max": max(every),

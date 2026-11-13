@@ -1,6 +1,6 @@
 [project]
 name = "fala"
-version = "0.3.0"
+version = "0.4.0"
 description = "Fala (The Wave): a hand-cranked terrace of Silesian familoks on rolling ground"
 requires-python = ">=3.12"
 dependencies = ["cadkit"]
