@@ -17,7 +17,7 @@ cad/
 │           ├── model.py      # Model base class + entry-point discovery
 │           ├── process.py    # FDM / SLA / CNC profiles: tolerances, build volume, mesh quality
 │           ├── standards/    # ISO reference data (fasteners, inserts, bearings, …)
-│           ├── features/     # reusable geometry: holes, pockets, fillets, joints, text, cams, faceted solids, …
+│           ├── features/     # reusable geometry: holes, pockets, fillets, joints, text, cams, gears, faceted solids, …
 │           ├── validate.py   # quality gate: valid BRep, single solid, watertight, fits build volume
 │           ├── visibility.py # ray-cast checks: what a viewer sees of a part ("in view", "hidden")
 │           ├── export.py     # STEP/STL/3MF/GLB + manifest.json (params, metrics, sha256, git rev)

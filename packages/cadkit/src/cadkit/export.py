@@ -21,6 +21,35 @@ from cadkit.validate import metrics, parts_of, validate
 _EPOCH = "2000-01-01T00:00:00"
 
 
+def _canonical_step_occurrences(text: str) -> str:
+    """Number OCCT's assembly occurrences locally and undo their history-dependent wrapping.
+
+    OCCT counts occurrences across the whole process, and a longer counter makes it wrap the
+    record at a different comma. Quoted names are kept as they are; only layout whitespace
+    inside these records is removed before the local numbers are assigned.
+    """
+    counter = count(1)
+
+    def replace(match):
+        record = re.sub(
+            r"'(?:[^']|'')*'|\s+",
+            lambda token: token.group() if token.group().startswith("'") else "",
+            match.group(),
+        )
+        return re.sub(
+            r"NEXT_ASSEMBLY_USAGE_OCCURRENCE\('(?:[^']|'')*'",
+            lambda _: f"NEXT_ASSEMBLY_USAGE_OCCURRENCE('{next(counter)}'",
+            record,
+            count=1,
+        )
+
+    return re.sub(
+        r"NEXT_ASSEMBLY_USAGE_OCCURRENCE\((?:'(?:[^']|'')*'|[^'])*?\);",
+        replace,
+        text,
+    )
+
+
 def _canonical_zip(path: Path):
     """Remove ZIP timestamps and lib3mf's random production-extension UUIDs."""
     with ZipFile(path) as archive:
@@ -68,14 +97,7 @@ def export_model(model: Model, variant: str, root: Path = Path("dist")) -> Path:
     export_step(step_assembly, out / "assembly.step", timestamp=_EPOCH)
     # OCCT uses a process-wide occurrence counter, even when the timestamp is fixed.
     step = out / "assembly.step"
-    counter = count(1)
-    step.write_text(
-        re.sub(
-            r"NEXT_ASSEMBLY_USAGE_OCCURRENCE\('[^']*'",
-            lambda match: f"NEXT_ASSEMBLY_USAGE_OCCURRENCE('{next(counter)}'",
-            step.read_text(),
-        )
-    )
+    step.write_text(_canonical_step_occurrences(step.read_text()))
     export_gltf(assembly, out / "assembly.glb", binary=True, linear_deflection=0.04)
     files = [out / "assembly.step", out / "assembly.glb"]
     for name, shape in parts.items():
