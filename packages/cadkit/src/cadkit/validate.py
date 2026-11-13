@@ -4,7 +4,9 @@ from itertools import combinations
 
 import numpy as np
 import trimesh
-from build123d import Shape
+from build123d import Compound, Shape
+from OCP.BRepAlgoAPI import BRepAlgoAPI_Common
+from OCP.collections import List_TopoDS_Shape
 
 from cadkit.process import Process
 
@@ -65,7 +67,9 @@ def overlaps(parts: dict[str, Shape], moving: set[str] | None = None, tolerance=
     """Exact positive-volume intersections after a bounding-box broad phase.
 
     If moving is supplied, skip pairs in which neither part moves. Face contact is allowed;
-    no geometric repair or automatic exclusion of joints is performed.
+    no geometric repair or automatic exclusion of joints is performed. The OCCT
+    operation is explicitly non-destructive: contact checks must not increase
+    input edge tolerances and thereby change subsequent STEP exports.
     """
     bounds = {name: shape.bounding_box() for name, shape in parts.items()}
     collisions = []
@@ -75,8 +79,18 @@ def overlaps(parts: dict[str, Shape], moving: set[str] | None = None, tolerance=
         aa, bb = bounds[a], bounds[b]
         if any(min(u, v) - max(p, q) < 1e-6 for p, u, q, v in zip(aa.min, aa.max, bb.min, bb.max)):
             continue
-        common = parts[a] & parts[b]
-        volume = common.volume if common is not None else 0
+        arguments, tools = List_TopoDS_Shape(), List_TopoDS_Shape()
+        arguments.Append(parts[a].wrapped)
+        tools.Append(parts[b].wrapped)
+        operation = BRepAlgoAPI_Common()
+        operation.SetArguments(arguments)
+        operation.SetTools(tools)
+        operation.SetNonDestructive(True)
+        operation.Build()
+        if not operation.IsDone():
+            raise RuntimeError(f"Intersection failed for {a} / {b}")
+        # Face/edge contact is allowed; only solid intersections have volume.
+        volume = sum(s.volume for s in Compound(operation.Shape()).solids())
         if volume > tolerance:
             collisions.append((a, b, round(volume, 6)))
     return collisions

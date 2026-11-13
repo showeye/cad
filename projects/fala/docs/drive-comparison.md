@@ -1,5 +1,9 @@
 # Fala / Nikisz: drive selection checkpoint
 
+Follow-up: [stage 3A contact rig and actual CAD motion](contact-rig.md) now develops
+the approved direction. The screening assumptions and limitations below remain
+the record of the drive-selection decision.
+
 Stage: engineering concept screening, 2026-11-13. Client selected the Nikisz visual direction
 and requested comparison of drives before choosing. Following this comparison, the client
 approved drive A (corkscrew shaft) for development on 2026-11-13. The earlier

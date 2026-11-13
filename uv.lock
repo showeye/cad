@@ -7,6 +7,7 @@ members = [
     "cad",
     "cadkit",
     "carnall",
+    "fala",
 ]
 
 [[package]]
@@ -549,6 +550,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/45/13/7f83a28fb417bcc2482b97f363f9b6ecbf8f25e189bc807504ff0943ec8f/ezdxf-1.4.5-cp315-cp315-win_amd64.whl", hash = "sha256:c08e5415d826fd742cbb25e64947aba8ee424a61ce279433c7f63bed057b8272", size = 3061053, upload-time = "2026-10-16T11:39:20.078Z" },
     { url = "https://files.pythonhosted.org/packages/fb/d7/9f420747a1edf562cabff228f8d1f7a16530ad021ea6f84c775ca15dec9b/ezdxf-1.4.5-py3-none-any.whl", hash = "sha256:70a79ec7d40990f60453e3c87ffe9f668907ee061cf6f4c0a3794d032ec2b40e", size = 1333303, upload-time = "2026-10-16T11:35:43.49Z" },
 ]
+
+[[package]]
+name = "fala"
+version = "0.1.0"
+source = { editable = "projects/fala" }
+dependencies = [
+    { name = "cadkit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "cadkit", editable = "packages/cadkit" }]
 
 [[package]]
 name = "fonttools"

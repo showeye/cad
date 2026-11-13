@@ -1,39 +1,59 @@
 # Fala (The Wave)
 
-A hand-cranked kinetic souvenir: a terrace of Silesian familoks on ground that rolls like a
-wave. Everything for this product lives in this folder.
+A hand-cranked collector piece: a Nikisz-style terrace of Silesian familoks on
+ground that rolls like a wave.
 
-## Status (2026-11-13)
+## Current stage — 2026-11-13
 
-The client approved **Look 1, Nikisz** and **Drive A, corkscrew shaft**, on 2026-11-13.
-The drive comparison is complete; the next stage is a small contact rig and motion proof:
+**Nikisz and drive A (corkscrew) are approved for development.** Stage 3A now has
+a parametric two-carriage contact rig, finite-face contact equations, geometry
+snapshots and a reproducible CAD motion/collision study.
 
-- [Drive comparison and recommendation](docs/drive-comparison.md)
-- [Animated motion study](docs/img/drive_screening.gif)
-- [Reproducible numerical results](docs/drive-screening.json)
+- [Stage 3A: rig, animation, contact solution and next gates](docs/contact-rig.md)
+- [Numerical and CAD evidence](docs/contact-proof.json)
+- [Verification record and known limits](docs/verification.md)
+- [Earlier drive comparison](docs/drive-comparison.md)
 
-A is the approved development direction; B remains a fallback if contact tests fail. Captured follower contact
-and rigid-carriage compatibility need resolution before a full motion proof. This stage
-makes no production-readiness, collision-free or durability claim.
+The rig develops the mechanism before the decorated terrace. Physical fit,
+friction, noise, retention and endurance remain open; this is not a production
+release or a ready-to-slice test plate.
 
-## Where things are
+## Files
 
-| Path | What it is |
+| Path | Contents |
 |---|---|
-| `docs/brief.md` | The client brief, verbatim. Source of truth. Read this first. |
-| `docs/look-brief.md` | The look brief: research, 25 references, stylisation, palette, motion, three looks, three drives, open questions, what could not be verified |
-| `docs/design-notes.md` | Engineering reasoning for drive A that is not in the look brief: geometry, constraints, assembly, print plan, test-print ideas, rejected ideas |
-| `docs/img/` | Concept renders, wave filmstrips and mechanism diagrams used by the look brief |
-| `concept/look_concepts.py` | Throwaway massing models of the three looks, posed on the wave; sends them to the OCP viewer and renders PNGs |
-| `concept/compose_sheets.py` | Builds the comparison sheet and filmstrips from those PNGs |
-| `concept/mechanism_diagrams.py` | Schematic diagrams of the three drives; prints the wave numbers |
-| `research/refs/` | Reference photos (familoks, mining damage, real prints) |
-| `research/SOURCES.md` | Where each photo came from, with author and licence; extra text sources |
-| `research/sheet_*.jpg` | Contact sheets of the reference photos |
+| `docs/brief.md` | Client brief, verbatim; source of truth |
+| `docs/look-brief.md` | Research, references, palette and original concepts; the client subsequently chose Nikisz |
+| `docs/design-notes.md` | Historical engineering starting points |
+| `docs/drive-comparison.md` | Approved drive direction and screening limitations |
+| `docs/contact-rig.md` | Current contact engineering, evidence and staged acceptance gates |
+| `docs/verification.md` | Completed checks and existing repository lint issues |
+| `src/fala/model.py` | Parametric rig geometry, validated dimensions and rigid poses |
+| `engineering/prove_contact.py` | Contact/collision evidence; calls shared export/render tools |
+| `engineering/compare_drives.py` | Earlier prescribed-path screening study |
+| `tests/` | Contact, rigid-motion, parameter and shared quality/snapshot checks |
+| `concept/` | Historical massing scripts; not product geometry |
+| `research/` | Reference photos, contact sheets and source/licence records |
+| `dist/` | Reproducible local CAD/Blender outputs (gitignored) |
 
-## Regenerate the concept material
+## Work with the current model
 
 Run from the repository root:
+
+```
+uv sync --all-packages
+uv run cadkit list
+uv run cadkit show fala -v contact_rig
+uv run pytest
+uv run python projects/fala/engineering/prove_contact.py --export --render
+```
+
+The last command checks signed full rotations at 1° intervals, regenerates the
+evidence, exports the rig, renders its actual CAD and saves a forward/reverse
+animation. Exports stay under `projects/fala/dist/fala/0.1.0/contact_rig/`.
+The VS Code OCP CAD Viewer listens on port 3939.
+
+To regenerate the older concept material:
 
 ```
 uv run python projects/fala/concept/look_concepts.py --strip
@@ -41,39 +61,21 @@ uv run python projects/fala/concept/compose_sheets.py
 uv run python projects/fala/concept/mechanism_diagrams.py
 ```
 
-The client watches progress in VS Code: the OCP CAD Viewer listens on port 3939, and
-`look_concepts.py` streams the three looks to it. Read `docs/look-brief.md` in the Markdown
-preview.
+## Handoff
 
-## Repository notes for whoever continues
+Read `AGENTS.md`, `docs/brief.md` and `docs/contact-rig.md`. Continue Nikisz and
+corkscrew A without repeating drive selection. B remains the fallback if loaded
+contact tests fail.
 
-- `cadkit` and the uv workspace now exist. Fala is still a concept folder; register its
-  product package when the drive is selected and prototype geometry is introduced.
-- The scripts in `concept/` are throwaway and are not the product model.
-- `ruff` and `pytest` are available through `uv run`.
-- Blender (through its MCP connection) and Snapmaker Orca are installed; neither has been used yet.
-- Nothing has been committed. Commit only when the client asks.
-- The reference photos in `research/refs/` are third-party material: keep them out of anything
-  published or shipped (see `research/SOURCES.md`).
+Next, resolve test-rig axis retention and print orientation, then issue a U1 fit
+ladder and representative loaded test. Broad upper contacts seat geometrically;
+the roughly 0.33–0.50 mm return clearance is not a measurement of free rocking or
+real print fit. The pin and keel are centred in their clearances during the study.
 
-## Handoff / next session
+The full terrace still needs concealed joints, roof clearance, transmission and
+overload design. Keep the provisional 3:1 ratio explicitly unconfirmed. Lettering,
+rear panel, ballast and filament brand remain open and need not block rig work.
 
-Read `AGENTS.md`, `docs/brief.md` and `docs/drive-comparison.md` first.
-Proceed with Nikisz and drive A; do not ask for drive selection again.
-Approval is for development, not a claim that the mechanism is proven.
-
-Next work: solve real helix/follower contact, compare broad and narrow contact pads, and
-provide the required sliding freedom for a rigid two-support carriage. Build a small
-parametric two-carriage contact rig before decorating the full terrace. Sweep a full
-rotation both ways, check contact and interference, and prepare a bare mechanism animation.
-Then provide U1 test parts and a fit ladder.
-
-Current evidence: `engineering/compare_drives.py` generates a prescribed-path GIF and
-1,440-sample numerical screening report; four tests in `tests/test_drive_screening.py` pass.
-These do not establish contact, collision clearance, friction, durability or production fit.
-Narrow-pad capture can have 1.42 mm play; fixed-X support sampling implies about 0.12 mm
-of varying support distance. Resolve both in the real geometry.
-
-Keep a provisional 3:1 crank ratio, explicitly unconfirmed. Lettering, rear panel, ballast
-and filament brand remain open; they need not block the contact rig. All Fala materials
-stay under this directory. No commits unless requested.
+All Fala materials stay in this project directory. Reusable mechanics and
+plumbing belong in `cadkit`. Third-party research photos must stay out of shipped
+or published material; see `research/SOURCES.md`. Commit only when requested.

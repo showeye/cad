@@ -100,12 +100,33 @@ def main():
         camera.data.ortho_scale = scale
         scene.render.resolution_x, scene.render.resolution_y = width, height
 
+    # Frame each product's actual bounds. Absolute camera targets from a single
+    # product can leave a smaller rig tiny or outside the picture entirely.
+    corners = [
+        obj.matrix_world @ Vector(corner) for obj in objects.values() for corner in obj.bound_box
+    ]
+    lower = Vector(tuple(min(p[i] for p in corners) for i in range(3)))
+    upper = Vector(tuple(max(p[i] for p in corners) for i in range(3)))
+    target = (lower + upper) / 2
+    distance = (upper - lower).length * 3
+
+    def preset(direction):
+        location = target + Vector(direction).normalized() * distance
+        rotation = (target - location).to_track_quat("-Z", "Y")
+        local = [rotation.inverted() @ (p - target) for p in corners]
+        width = max(p.x for p in local) - min(p.x for p in local)
+        height = max(p.y for p in local) - min(p.y for p in local)
+        return location, target, max(width, height * 1600 / 1100) * 1.18
+
     presets = {
-        "hero": ((-0.23, -0.34, 0.23), (0, 0, 0.055), 0.264),
-        "front": ((0, -0.4, 0.1), (0, 0, 0.052), 0.215),
-        "back": ((0.24, 0.32, 0.25), (0, 0, 0.05), 0.24),
-        "top": ((-0.015, -0.045, 0.48), (0, 0, 0.035), 0.22),
-        "mechanism": ((-0.17, -0.3, 0.25), (-0.024, 0, 0.037), 0.17),
+        name: preset(direction)
+        for name, direction in {
+            "hero": (-0.65, -1, 0.65),
+            "front": (0, -1, 0.12),
+            "back": (0.75, 1, 0.75),
+            "top": (-0.01, -0.04, 1),
+            "mechanism": (0.65, -1, 0.25),
+        }.items()
     }
     for name, preset in presets.items():
         view(*preset)

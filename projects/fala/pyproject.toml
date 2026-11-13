@@ -1,0 +1,16 @@
+[project]
+name = "fala"
+version = "0.1.0"
+description = "Fala: kinetic Nikisz terrace, contact development rig"
+requires-python = ">=3.12"
+dependencies = ["cadkit"]
+
+[project.entry-points."cadkit.models"]
+fala = "fala.model:model"
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

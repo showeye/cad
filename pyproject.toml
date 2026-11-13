@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["packages/*", "projects/carnall"]
+members = ["packages/*", "projects/carnall", "projects/fala"]
 
 [tool.uv.sources]
 cadkit = { workspace = true }
@@ -26,4 +26,5 @@ line-length = 100
 target-version = "py312"
 
 [tool.pytest.ini_options]
-testpaths = ["packages/cadkit/tests", "projects/carnall/tests"]
+addopts = "--import-mode=importlib"
+testpaths = ["packages/cadkit/tests", "projects/carnall/tests", "projects/fala/tests"]

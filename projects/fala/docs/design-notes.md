@@ -1,5 +1,11 @@
 # Fala: design notes for the motion proof
 
+**Historical starting points.** Stage 3A now supersedes the follower/contact and
+assembly assumptions below: see [the finite-contact rig](contact-rig.md). In
+particular, the rear keel prevents simply dropping the cam into the rear-open
+jaws; the rig uses axial carriage insertion before lowering the group into its
+frame. The full product's assembly method is still to be developed.
+
 Engineering reasoning behind the look brief that is not written there. Everything here is a
 starting point for step 3 and is open to change. All dimensions in mm and degrees.
 

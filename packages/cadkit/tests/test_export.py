@@ -6,7 +6,7 @@ import sys
 
 import trimesh
 from build123d import Box, Color, import_step
-from cadkit.export import export_model
+from cadkit.export import _canonical_step_occurrences, export_model
 from cadkit.model import Model
 from cadkit.params import Params
 from cadkit.process import FDM
@@ -38,6 +38,14 @@ def test_interference_gate_distinguishes_touch_and_overlap():
     assert overlaps({"a": Box(10, 10, 10), "b": Pos(9, 0, 0) * Box(10, 10, 10)}) == [
         ("a", "b", 100)
     ]
+
+
+def test_step_occurrence_wrapping_is_independent_of_global_counter_length():
+    short = "#1 = NEXT_ASSEMBLY_USAGE_OCCURRENCE('5','part ''front'' );',\n  '',#5,#3,$);\n"
+    long = "#1 = NEXT_ASSEMBLY_USAGE_OCCURRENCE('1000','part ''front'' );'\n  ,'',#5,#3,$);\n"
+    canonical = "#1 = NEXT_ASSEMBLY_USAGE_OCCURRENCE('1','part ''front'' );','',#5,#3,$);\n"
+    assert _canonical_step_occurrences(short) == canonical
+    assert _canonical_step_occurrences(long) == canonical
 
 
 def test_rebuild_removes_only_previous_managed_components(tmp_path):

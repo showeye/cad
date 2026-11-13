@@ -1,0 +1,237 @@
+{
+  "cad_sweep": {
+    "directions": [
+      "positive",
+      "negative"
+    ],
+    "failures": [],
+    "intersection_volume_threshold_mm3": 1e-05,
+    "max_cam_to_carriage_distance_mm": 1.646840250919319e-07,
+    "minimum_separations_mm": {
+      "between_carriages": 1.8554309195294223,
+      "cam_to_frame": 0.19999999999999574,
+      "carriage_to_frame": 0.1999999999999993
+    },
+    "non_destructive_intersections": true,
+    "phase_step_deg": 1,
+    "poses_per_direction": 360,
+    "scope": "All seven parts, including both guide pins and the fixed axle. Signed phase sweeps retrace geometry; no loaded reversal simulation."
+  },
+  "geometry": {
+    "cam_and_thumbwheel": {
+      "area": 5562.0498,
+      "bbox": [
+        54.0,
+        32.0,
+        32.0
+      ],
+      "faces": 6,
+      "max": [
+        49.0,
+        16.0,
+        37.0
+      ],
+      "min": [
+        -5.0,
+        -16.0,
+        5.0
+      ],
+      "solids": 1,
+      "volume": 15119.3096
+    },
+    "carriage_1": {
+      "area": 4237.0667,
+      "bbox": [
+        21.7694,
+        45.0,
+        29.5816
+      ],
+      "faces": 37,
+      "max": [
+        22.6998,
+        23.0,
+        39.1466
+      ],
+      "min": [
+        0.9304,
+        -22.0,
+        9.565
+      ],
+      "solids": 1,
+      "volume": 3831.8376
+    },
+    "carriage_2": {
+      "area": 4237.0667,
+      "bbox": [
+        20.6822,
+        45.0,
+        29.2748
+      ],
+      "faces": 37,
+      "max": [
+        43.6306,
+        23.0,
+        40.8932
+      ],
+      "min": [
+        22.9485,
+        -22.0,
+        11.6184
+      ],
+      "solids": 1,
+      "volume": 3831.8376
+    },
+    "frame": {
+      "area": 19344.3115,
+      "bbox": [
+        76.0,
+        62.0,
+        43.0
+      ],
+      "faces": 46,
+      "max": [
+        60.0,
+        33.0,
+        43.0
+      ],
+      "min": [
+        -16.0,
+        -29.0,
+        0.0
+      ],
+      "solids": 1,
+      "volume": 25152.2894
+    },
+    "reference_guide_pin_1_3x14": {
+      "area": 146.0841,
+      "bbox": [
+        3.0,
+        14.0,
+        3.0
+      ],
+      "faces": 3,
+      "max": [
+        12.5,
+        34.0,
+        37.6466
+      ],
+      "min": [
+        9.5,
+        20.0,
+        34.6466
+      ],
+      "solids": 1,
+      "volume": 98.9602
+    },
+    "reference_guide_pin_2_3x14": {
+      "area": 146.0841,
+      "bbox": [
+        3.0,
+        14.0,
+        3.0
+      ],
+      "faces": 3,
+      "max": [
+        34.5,
+        34.0,
+        39.3932
+      ],
+      "min": [
+        31.5,
+        20.0,
+        36.3932
+      ],
+      "solids": 1,
+      "volume": 98.9602
+    },
+    "reference_steel_axle_4x68": {
+      "area": 879.6459,
+      "bbox": [
+        68.0,
+        4.0,
+        4.0
+      ],
+      "faces": 3,
+      "max": [
+        56.0,
+        2.0,
+        23.0
+      ],
+      "min": [
+        -12.0,
+        -2.0,
+        19.0
+      ],
+      "solids": 1,
+      "volume": 854.5132
+    }
+  },
+  "limitations": [
+    "Discrete poses; not a continuous swept-volume certificate.",
+    "Smooth loft approximates the analytic circular-section cam; CAD contact distances are measured.",
+    "Pin/slot and keel clearances are modelled at their centred positions; clearance-induced rocking is unmeasured.",
+    "Lower-jaw gaps are gravity-seated clearances, not total free-rocking backlash.",
+    "No friction, wear, noise, warm-window, overload, shipping or slicer verification.",
+    "Pin axial retention, production bearings and the provisional 3:1 transmission remain unresolved.",
+    "No decorated houses or concealed terrace joints are included."
+  ],
+  "model": "fala",
+  "numerical": {
+    "assumed_full_terrace_gravity_only": {
+      "cg_height_above_deck_mm": 30,
+      "houses": 8,
+      "mass_per_carriage_g": 15,
+      "pitch_mm": 22,
+      "scope": "Equal assumed masses, gravity only; excludes friction, inertia and gears.",
+      "shaft_torque_range_mNm": [
+        -0.6977300192328115,
+        0.6977300192328115
+      ]
+    },
+    "contact_y_range_mm": [
+      -3.499999969354858,
+      3.499999969354858
+    ],
+    "deck_height_above_axle_range_mm": [
+      10.635515665187938,
+      17.425743660796705
+    ],
+    "gravity_seated_return_gap_mm": [
+      0.331290289499524,
+      0.4981994080045027
+    ],
+    "max_abs_lean_deg": 6.004206925793379,
+    "max_upper_contact_equation_residual_mm": 7.105427357601002e-15,
+    "phase_samples_per_carriage": 1440,
+    "section_comparison": {
+      "broad_pad_section_capture_variation_mm": 0,
+      "infinitesimal_y0_pad_capture_variation_mm": 1.4168760482229992,
+      "scope": "Section limit only; finite axial width and lean are solved above."
+    }
+  },
+  "params": {
+    "amplitude": 3.5,
+    "angle": 0,
+    "cam_radius": 9,
+    "cam_sections": 55,
+    "capture_clearance": 0.4,
+    "fit": 0.4,
+    "jaw_wall": 2.4,
+    "pad_depth": 32,
+    "pad_drop": 5,
+    "pad_width": 2.4,
+    "shaft_height": 21,
+    "support_span": 16,
+    "wavelength": 207.05882352941177
+  },
+  "source_sha256": {
+    "cams.py": "523afd02b60d9198727cda6780972730217f4ccf082eb2568ab8bc27f1c5e3c4",
+    "model.py": "764834e2560b609a21952e9742bef4c3fb7e6ac5c9086f42b9492da9069b8119",
+    "prove_contact.py": "4a041601742492a59fe0dbd5ad1469fd86bae850b542773e1c5b7e52f20a21fc",
+    "validate.py": "1c7542fe016a63329f8aa33d07fff127f75c8173d912960f47b8745dd53ec82b"
+  },
+  "stage": "3A: finite-pad contact development; physical prototype required",
+  "units": "mm, degrees, mNm",
+  "variant": "contact_rig",
+  "version": "0.1.0"
+}
