@@ -61,6 +61,26 @@ def test_render_matrices_match_rigid_cad_and_reverse():
             assert np.array(frames[i][name]) == pytest.approx(np.array(frames[24 - i][name]))
 
 
+def test_loaded_fixture_motion_and_retention_clearances():
+    params = model.variants["loaded_rig"]
+    base = build(params)
+    frames = _render_poses(params, steps=24)
+    for index, angle in enumerate(range(0, 360, 15)):
+        target = build(params.model_copy(update={"angle": angle}))
+        assert not (hits := overlaps(target)), (angle, hits)
+        for name, matrix in frames[index].items():
+            point = np.array(matrix) @ np.array([*base[name].center(), 1])
+            assert point[:3] == pytest.approx(tuple(target[name].center()), abs=1e-5)
+        for i in (1, 2):
+            # Head cannot pinch the moving slot bracket in a centred CAD pose.
+            screw = target[f"reference_guide_shoulder_{i}_4_M3_12"]
+            assert screw.distance_to(target["frame"]) > 0.19
+    # The main shaft projects beyond both 5 mm collars for a visible seating check.
+    axle = base["reference_steel_axle_4x80"].bounding_box()
+    assert axle.min.X == pytest.approx(-18)
+    assert axle.max.X == pytest.approx(62)
+
+
 def test_sampled_axial_threading_then_lowering_into_frame():
     p = Params()
     cam, frame, neutral = _neutral(p)

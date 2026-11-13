@@ -1,8 +1,10 @@
-# Fala / Nikisz — stage 3A: finite follower contact
+# Fala / Nikisz — finite follower contact and stage 3B test rig
 
-Development rig, model `fala` **0.1.0**, variant `contact_rig`. This is the first
-physical geometry for the approved corkscrew direction. It is a mechanism study;
-the production model and U1 print plates are later stages.
+Development rig, model `fala` **0.2.0**, variant `contact_rig`. The stage 3A contact
+solution is retained. Stage 3B adds axis retention, fit coupons, oriented test
+exports and a removable loaded-test fixture. Production plates and the decorated
+product follow physical tests. See the [U1 test guide](u1-test-guide.md) for
+the BOM, print orientation, assembly sequence and measurement protocol.
 
 ![Two-carriage rig made from the actual CAD solids](img/contact_rig.png)
 
@@ -22,7 +24,7 @@ finite faces. Contact can slide along X as well as Y. No moving linkage tries to
 hold two prescribed sine samples at a fixed distance: that was the approximately
 0.12 mm incompatibility in the earlier screening.
 
-The fixed-X point is a transverse 3 mm guide pin at deck level, running in a
+The fixed-X point is a transverse 4 mm smooth shoulder at deck level, running in a
 vertical slot. A rear keel between cheeks controls depth, roll and yaw. The
 model centres the pin and keel within their running clearances; it does not
 pretend that those clearances disappear in a real print.
@@ -73,8 +75,16 @@ does not establish two-finger effort: friction, guide reactions, filament finish
 gear losses and inertia remain unmeasured. The animation uses the same rigid
 poses as the CAD; it contains no independently animated or deforming geometry.
 
-All seven components pass the shared BRep, single-solid, watertight mesh and U1
-envelope gate. The geometry snapshot is stored in `tests/snapshots/contact_rig.json`.
+The retained rig has eleven components; the loaded rig has seventeen, including
+nominal bought-hardware envelopes. All variants pass the shared BRep,
+single-solid, watertight mesh and U1 envelope gate. Snapshots live in
+`tests/snapshots/`. The loaded study includes masts/mounting hardware, without
+an assumed ballast pack; the real pack must also be checked through full turns.
+
+![Retained rig with removable slotted load carriers; ballast is weighed separately](img/loaded_rig.png)
+
+The [load-fixture clearance report](loaded-proof.json) checks these actual
+solids. The [U1 guide](u1-test-guide.md) explains how to set the measured load.
 
 ## Rig contents and assembly intent
 
@@ -83,33 +93,38 @@ envelope gate. The geometry snapshot is stored in `tests/snapshots/contact_rig.j
 | Printed frame | 1 | Floor, axle supports, keel cheeks and pin slots |
 | Printed cam with thumbwheel | 1 | Direct 1:1 input for observing contact |
 | Printed carriage | 2 identical | Two upper pads, captured return faces, deck and keel |
-| Steel axle, 4 × 68 mm | 1 | Fixed straight reference axis |
-| Transverse guide axis, 3 × 14 mm | 2 | Carriage X location while allowing rise and lean |
+| Steel axle, 4 × 80 mm | 1 | Straight main axis, retained by collars |
+| Shoulder screw, Ø4 × 12 / M3 | 2 | Smooth guide in each slot, headed capture and a carriage locknut |
+| M3 locknut, at most 4 mm tall | 2 | Guide retention, front-loaded nut pocket |
+| Shaft collar, Ø4 / Ø8 × 5 | 2 | Reversible axle retention, 0.5 mm outside each end support |
 
-The bare rig occupies **76 × 63 × 43 mm**, including the projecting pin ends.
+The retained bare rig has an **80 × 66 mm** footprint, including hardware.
 The 1:1 thumbwheel is for this rig. The full product's provisional **3:1** ratio
 has not been changed or implemented.
 
 Assembly intent is to thread the two carriages over the cam's **left axial end**,
 the right-hand carriage first, before putting the group into the frame. Lower
 the group into the keel cheeks, then insert the fixed axle through the end
-supports and cam bore. Insert the transverse axes through the rear slots into
-the carriage bosses. The rear keels obstruct a simple rearward cam insertion;
-the original rear-drop assembly idea does not apply to this rig. Axial retention
-of those axes and the main axle is still unresolved: the cylindrical reference
-solids are not complete fastener designs.
-This is one reason to withhold a print-and-run claim at this stage.
+supports and cam bore. Fit collars and insert shoulder screws through the rear
+slots into the carriage locknuts. The rear keels obstruct a simple rearward cam
+insertion; the original rear-drop assembly idea does not apply to this rig.
+The screw shoulder seats inside the carriage boss, leaving the head clear of
+the slot bracket. Retention now has a concrete assembly design; real nut
+engagement, tightening, loosening and print fit remain physical checks.
 
 The exported STEP, GLB and 3MF retain assembly coordinates. Individual STL files
-also retain those coordinates. They are **engineering geometry, not oriented
-Snapmaker Orca plates**. Bridging, seam placement, support removal, print time
-and real fit have not been sliced or approved.
+in `parts/` also retain those coordinates. `prepare_u1.py` additionally writes
+explicitly oriented test geometry in `print/`, with its own manifest and
+individual STEP files. These 3MFs are **not configured Snapmaker Orca projects**.
+Bridging, support painting, seams, support removal, print time and real fit still
+require slicer inspection and a physical print.
 
 ## Next stage and acceptance gates
 
-1. **Finish the test rig for printing.** Resolve axis retention, confirm a
-   support-free or hidden-support orientation, and make a labelled jaw/axle/keel
-   fit ladder. Check 0.3/0.4/0.5 mm nominal allowances on the actual U1. Do not
+1. **Inspect and print the test package.** Retention and orientation candidates
+   are modelled. Inspect permitted hidden end-face support locations and use
+   the labelled jaw/axle/keel fit ladder to check 0.3/0.4/0.5 mm nominal
+   allowances on the actual U1. Do not
    compensate for a tight fit by sanding contact faces.
 2. **Measure loaded motion.** Add a representative mass at the Nikisz centre of
    gravity. Record starting/running force through a complete turn in both
@@ -133,9 +148,11 @@ uv sync --all-packages
 uv run pytest
 uv run cadkit show fala -v contact_rig
 uv run python projects/fala/engineering/prove_contact.py --export --render
+uv run python projects/fala/engineering/prove_contact.py --variant loaded_rig
+uv run python projects/fala/engineering/prepare_u1.py --render
 ```
 
 Evidence and review images stay in `projects/fala/docs/`; CAD exports and the
-Blender scene go to `projects/fala/dist/fala/0.1.0/contact_rig/` (gitignored).
+Blender scene go to `projects/fala/dist/fala/0.2.0/` (gitignored).
 The shared `cadkit` implementation owns contact math, validation, export and
 rendering; the product package owns only its dimensions, geometry and poses.

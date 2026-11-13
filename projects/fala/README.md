@@ -5,18 +5,22 @@ ground that rolls like a wave.
 
 ## Current stage — 2026-11-13
 
-**Nikisz and drive A (corkscrew) are approved for development.** Stage 3A now has
-a parametric two-carriage contact rig, finite-face contact equations, geometry
-snapshots and a reproducible CAD motion/collision study.
+**Nikisz and drive A (corkscrew) are approved for development.** Stage 3B adds
+serviceable axle/guide retention, labelled 0.30/0.40/0.50 mm U1 fit coupons,
+explicit print orientations and removable ballast masts to the two-carriage rig.
+The current model is **0.2.0**; variant `contact_rig` keeps its existing key.
 
-- [Stage 3A: rig, animation, contact solution and next gates](docs/contact-rig.md)
-- [Numerical and CAD evidence](docs/contact-proof.json)
+- [U1 test package: orientation, BOM, assembly and measurements](docs/u1-test-guide.md)
+- [Fit-coupon CAD preview, shown in bed orientation](docs/img/u1_fit_040.png)
+- [Rig, animation, contact solution and next gates](docs/contact-rig.md)
+- [Contact evidence](docs/contact-proof.json) and [load-fixture clearance evidence](docs/loaded-proof.json)
 - [Verification record and known limits](docs/verification.md)
 - [Earlier drive comparison](docs/drive-comparison.md)
 
-The rig develops the mechanism before the decorated terrace. Physical fit,
-friction, noise, retention and endurance remain open; this is not a production
-release or a ready-to-slice test plate.
+The rig develops the mechanism before the decorated terrace. Retention is now
+modelled; physical fit, loaded effort, noise and endurance still need tests.
+The oriented 3MFs require support painting and slicer inspection before printing.
+No production release or measured print time is claimed.
 
 ## Files
 
@@ -27,9 +31,12 @@ release or a ready-to-slice test plate.
 | `docs/design-notes.md` | Historical engineering starting points |
 | `docs/drive-comparison.md` | Approved drive direction and screening limitations |
 | `docs/contact-rig.md` | Current contact engineering, evidence and staged acceptance gates |
+| `docs/u1-test-guide.md` | Fit ladder, orientation/support rules, retention hardware, assembly and loaded test |
+| `docs/u1-fit-results.csv`, `docs/u1-results.csv` | Blank fit and loaded-test records |
 | `docs/verification.md` | Completed checks and existing repository lint issues |
 | `src/fala/model.py` | Parametric rig geometry, validated dimensions and rigid poses |
 | `engineering/prove_contact.py` | Contact/collision evidence; calls shared export/render tools |
+| `engineering/prepare_u1.py` | Oriented test geometry, manifests and review ZIPs through cadkit |
 | `engineering/compare_drives.py` | Earlier prescribed-path screening study |
 | `tests/` | Contact, rigid-motion, parameter and shared quality/snapshot checks |
 | `concept/` | Historical massing scripts; not product geometry |
@@ -45,12 +52,16 @@ uv sync --all-packages
 uv run cadkit list
 uv run cadkit show fala -v contact_rig
 uv run pytest
-uv run python projects/fala/engineering/prove_contact.py --export --render
+uv run python projects/fala/engineering/prove_contact.py
+uv run python projects/fala/engineering/prove_contact.py --variant loaded_rig
+uv run python projects/fala/engineering/prepare_u1.py --render
 ```
 
-The last command checks signed full rotations at 1° intervals, regenerates the
-evidence, exports the rig, renders its actual CAD and saves a forward/reverse
-animation. Exports stay under `projects/fala/dist/fala/0.1.0/contact_rig/`.
+The proof commands check signed full rotations at 1° intervals and regenerate
+the evidence. The final command exports all five variants, renders their actual
+CAD and saves forward/reverse rig animations. Each export includes `print/`
+with oriented 3MF, individual STEP/STL and a linked manifest; each variant also
+has a review ZIP. Exports stay under `projects/fala/dist/fala/0.2.0/`.
 The VS Code OCP CAD Viewer listens on port 3939.
 
 To regenerate the older concept material:
@@ -67,9 +78,13 @@ Read `AGENTS.md`, `docs/brief.md` and `docs/contact-rig.md`. Continue Nikisz and
 corkscrew A without repeating drive selection. B remains the fallback if loaded
 contact tests fail.
 
-Next, resolve test-rig axis retention and print orientation, then issue a U1 fit
-ladder and representative loaded test. Broad upper contacts seat geometrically;
-the roughly 0.33–0.50 mm return clearance is not a measurement of free rocking or
+Next, inspect the proposed support placements in Snapmaker Orca, print the U1
+fit ladder using the guide, and return actual fit measurements before tuning
+the rig. Then weigh/balance the moving assemblies and run the loaded comparison.
+The revised flat-print mast has nominal adjustment range for the assumed load;
+actual mass/CG and the purchased ballast pack still need checking.
+Broad upper contacts seat geometrically; the roughly 0.33–0.50 mm return
+clearance is not a measurement of free rocking or
 real print fit. The pin and keel are centred in their clearances during the study.
 
 The full terrace still needs concealed joints, roof clearance, transmission and

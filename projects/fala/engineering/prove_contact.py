@@ -80,9 +80,9 @@ def _numerical(params, samples=1440):
     }
 
 
-def proof(step=1):
+def proof(step=1, variant="contact_rig"):
     """Check BReps in signed phase order, including every reference axis."""
-    params = geometry.Params()
+    params = geometry.model.variants[variant]
     phases = list(range(0, 360, step))
     errors = validate(geometry.build(params), geometry.model.process)
     if errors:
@@ -116,13 +116,20 @@ def proof(step=1):
     parts = geometry.build(params)
     source_paths = [Path(geometry.__file__), Path(__file__)]
     source_paths.extend(
-        Path(import_module(name).__file__) for name in ("cadkit.features.cams", "cadkit.validate")
+        Path(import_module(name).__file__)
+        for name in (
+            "cadkit.features.cams",
+            "cadkit.features.hardware",
+            "cadkit.features.mechanical",
+            "cadkit.features.text",
+            "cadkit.validate",
+        )
     )
     report = {
-        "stage": "3A: finite-pad contact development; physical prototype required",
+        "stage": "3B: retained contact rig and removable load carrier; physical prototype required",
         "model": geometry.model.name,
         "version": geometry.model.version,
-        "variant": "contact_rig",
+        "variant": variant,
         "units": "mm, degrees, mNm",
         "params": params.model_dump(),
         "source_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in source_paths},
@@ -137,7 +144,7 @@ def proof(step=1):
             "failures": failures,
             "max_cam_to_carriage_distance_mm": max_distance,
             "minimum_separations_mm": min_fixed,
-            "scope": "All seven parts, including both guide pins and the fixed axle. "
+            "scope": f"All {len(parts)} parts, including nominal retention hardware. "
             "Signed phase sweeps retrace geometry; no loaded reversal simulation.",
         },
         "limitations": [
@@ -146,7 +153,9 @@ def proof(step=1):
             "Pin/slot and keel clearances are modelled at their centred positions; clearance-induced rocking is unmeasured.",
             "Lower-jaw gaps are gravity-seated clearances, not total free-rocking backlash.",
             "No friction, wear, noise, warm-window, overload, shipping or slicer verification.",
-            "Pin axial retention, production bearings and the provisional 3:1 transmission remain unresolved.",
+            "Retention uses nominal supplier envelopes; purchased dimensions, tightening and real print fit need verification.",
+            "Load masts do not include an assumed ballast pack; weigh and balance the actual moving assembly.",
+            "Production bearings and the provisional 3:1 transmission remain unresolved.",
             "No decorated houses or concealed terrace joints are included.",
         ],
     }
@@ -158,30 +167,32 @@ def proof(step=1):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--phase-step", type=int, choices=(1, 2, 5), default=1)
+    parser.add_argument("--variant", choices=("contact_rig", "loaded_rig"), default="contact_rig")
     parser.add_argument("--export", action="store_true")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--show", action="store_true")
     args = parser.parse_args()
-    report = proof(args.phase_step)
-    target = ROOT / "docs" / "contact-proof.json"
+    report = proof(args.phase_step, args.variant)
+    stem = "contact" if args.variant == "contact_rig" else "loaded"
+    target = ROOT / "docs" / f"{stem}-proof.json"
     target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(target)
     if args.export or args.render:
-        out = export_model(geometry.model, "contact_rig", ROOT / "dist")
+        out = export_model(geometry.model, args.variant, ROOT / "dist")
         print(out)
         if args.render:
             from cadkit.render import render_model
 
-            render_model(geometry.model, "contact_rig", out, geometry, animate=True)
+            render_model(geometry.model, args.variant, out, geometry, animate=True)
             for source, name in (
-                ("hero.png", "contact_rig.png"),
-                ("motion.gif", "contact_rig.gif"),
+                ("hero.png", f"{stem}_rig.png"),
+                ("motion.gif", f"{stem}_rig.gif"),
             ):
                 shutil.copy2(out / source, ROOT / "docs" / "img" / name)
     if args.show:
         from ocp_vscode import show
 
-        parts = geometry.build(geometry.Params())
+        parts = geometry.build(geometry.model.variants[args.variant])
         show(*parts.values(), names=list(parts))
 
 

@@ -15,7 +15,7 @@
     "non_destructive_intersections": true,
     "phase_step_deg": 1,
     "poses_per_direction": 360,
-    "scope": "All seven parts, including both guide pins and the fixed axle. Signed phase sweeps retrace geometry; no loaded reversal simulation."
+    "scope": "All 11 parts, including nominal retention hardware. Signed phase sweeps retrace geometry; no loaded reversal simulation."
   },
   "geometry": {
     "cam_and_thumbwheel": {
@@ -40,17 +40,17 @@
       "volume": 15119.3096
     },
     "carriage_1": {
-      "area": 4237.0667,
+      "area": 4382.9405,
       "bbox": [
         21.7694,
         45.0,
-        29.5816
+        31.5816
       ],
-      "faces": 37,
+      "faces": 47,
       "max": [
         22.6998,
         23.0,
-        39.1466
+        41.1466
       ],
       "min": [
         0.9304,
@@ -58,20 +58,20 @@
         9.565
       ],
       "solids": 1,
-      "volume": 3831.8376
+      "volume": 3979.9009
     },
     "carriage_2": {
-      "area": 4237.0667,
+      "area": 4382.9405,
       "bbox": [
         20.6822,
         45.0,
-        29.2748
+        31.2748
       ],
-      "faces": 37,
+      "faces": 47,
       "max": [
         43.6306,
         23.0,
-        40.8932
+        42.8932
       ],
       "min": [
         22.9485,
@@ -79,10 +79,10 @@
         11.6184
       ],
       "solids": 1,
-      "volume": 3831.8376
+      "volume": 3979.9009
     },
     "frame": {
-      "area": 19344.3115,
+      "area": 18895.0796,
       "bbox": [
         76.0,
         62.0,
@@ -100,70 +100,154 @@
         0.0
       ],
       "solids": 1,
-      "volume": 25152.2894
+      "volume": 24583.9257
     },
-    "reference_guide_pin_1_3x14": {
-      "area": 146.0841,
+    "reference_guide_locknut_1_M3": {
+      "area": 152.1667,
       "bbox": [
-        3.0,
-        14.0,
-        3.0
+        6.3199,
+        4.0,
+        5.7864
       ],
-      "faces": 3,
+      "faces": 9,
       "max": [
-        12.5,
-        34.0,
-        37.6466
+        14.1599,
+        20.0,
+        39.0397
       ],
       "min": [
-        9.5,
-        20.0,
-        34.6466
+        7.8401,
+        16.0,
+        33.2534
       ],
       "solids": 1,
-      "volume": 98.9602
+      "volume": 76.5147
     },
-    "reference_guide_pin_2_3x14": {
-      "area": 146.0841,
+    "reference_guide_locknut_2_M3": {
+      "area": 152.1667,
       "bbox": [
-        3.0,
-        14.0,
-        3.0
+        6.3409,
+        4.0,
+        5.6692
       ],
-      "faces": 3,
+      "faces": 9,
       "max": [
-        34.5,
-        34.0,
-        39.3932
+        36.1704,
+        20.0,
+        40.7278
       ],
       "min": [
-        31.5,
-        20.0,
-        36.3932
+        29.8296,
+        16.0,
+        35.0586
       ],
       "solids": 1,
-      "volume": 98.9602
+      "volume": 76.5147
     },
-    "reference_steel_axle_4x68": {
-      "area": 879.6459,
+    "reference_guide_shoulder_1_4_M3_12": {
+      "area": 359.7124,
       "bbox": [
-        68.0,
+        7.0,
+        22.0,
+        7.0
+      ],
+      "faces": 7,
+      "max": [
+        14.5,
+        37.0,
+        39.6466
+      ],
+      "min": [
+        7.5,
+        15.0,
+        32.6466
+      ],
+      "solids": 1,
+      "volume": 315.7301
+    },
+    "reference_guide_shoulder_2_4_M3_12": {
+      "area": 359.7124,
+      "bbox": [
+        7.0,
+        22.0,
+        7.0
+      ],
+      "faces": 7,
+      "max": [
+        36.5,
+        37.0,
+        41.3932
+      ],
+      "min": [
+        29.5,
+        15.0,
+        34.3932
+      ],
+      "solids": 1,
+      "volume": 315.7301
+    },
+    "reference_shaft_collar_1_DIN705": {
+      "area": 263.8938,
+      "bbox": [
+        5.0,
+        8.0,
+        8.0
+      ],
+      "faces": 4,
+      "max": [
+        -10.5,
+        4.0,
+        25.0
+      ],
+      "min": [
+        -15.5,
+        -4.0,
+        17.0
+      ],
+      "solids": 1,
+      "volume": 188.4956
+    },
+    "reference_shaft_collar_2_DIN705": {
+      "area": 263.8938,
+      "bbox": [
+        5.0,
+        8.0,
+        8.0
+      ],
+      "faces": 4,
+      "max": [
+        59.5,
+        4.0,
+        25.0
+      ],
+      "min": [
+        54.5,
+        -4.0,
+        17.0
+      ],
+      "solids": 1,
+      "volume": 188.4956
+    },
+    "reference_steel_axle_4x80": {
+      "area": 1030.4424,
+      "bbox": [
+        80.0,
         4.0,
         4.0
       ],
       "faces": 3,
       "max": [
-        56.0,
+        62.0,
         2.0,
         23.0
       ],
       "min": [
-        -12.0,
+        -18.0,
         -2.0,
         19.0
       ],
       "solids": 1,
-      "volume": 854.5132
+      "volume": 1005.3096
     }
   },
   "limitations": [
@@ -172,7 +256,9 @@
     "Pin/slot and keel clearances are modelled at their centred positions; clearance-induced rocking is unmeasured.",
     "Lower-jaw gaps are gravity-seated clearances, not total free-rocking backlash.",
     "No friction, wear, noise, warm-window, overload, shipping or slicer verification.",
-    "Pin axial retention, production bearings and the provisional 3:1 transmission remain unresolved.",
+    "Retention uses nominal supplier envelopes; purchased dimensions, tightening and real print fit need verification.",
+    "Load masts do not include an assumed ballast pack; weigh and balance the actual moving assembly.",
+    "Production bearings and the provisional 3:1 transmission remain unresolved.",
     "No decorated houses or concealed terrace joints are included."
   ],
   "model": "fala",
@@ -217,21 +303,27 @@
     "capture_clearance": 0.4,
     "fit": 0.4,
     "jaw_wall": 2.4,
+    "mast_height": 140,
+    "nut_fit": 0.3,
     "pad_depth": 32,
     "pad_drop": 5,
     "pad_width": 2.4,
     "shaft_height": 21,
+    "study": "contact",
     "support_span": 16,
     "wavelength": 207.05882352941177
   },
   "source_sha256": {
     "cams.py": "523afd02b60d9198727cda6780972730217f4ccf082eb2568ab8bc27f1c5e3c4",
-    "model.py": "764834e2560b609a21952e9742bef4c3fb7e6ac5c9086f42b9492da9069b8119",
-    "prove_contact.py": "4a041601742492a59fe0dbd5ad1469fd86bae850b542773e1c5b7e52f20a21fc",
+    "hardware.py": "01da82d7cee9f3cc8576fefcef259b98ce277007bd636fc5f80eee6fd2be92f0",
+    "mechanical.py": "248cb98d013c6c4fea128522d190bf5ce63e7054254530596781290a3e559d06",
+    "model.py": "6f5b2b9ace7095f20389d87eed2d715f6b1264be84d7e9e085555f7403d8a117",
+    "prove_contact.py": "574e5b87dc7516f5d3cef07dc16103b279ab234eacad8b1097f5df7f6a8c3d47",
+    "text.py": "307bcf4af3d9d2d0ca735c5785eac2073ef71e430482ae55d25a0f11aa932ed5",
     "validate.py": "1c7542fe016a63329f8aa33d07fff127f75c8173d912960f47b8745dd53ec82b"
   },
-  "stage": "3A: finite-pad contact development; physical prototype required",
+  "stage": "3B: retained contact rig and removable load carrier; physical prototype required",
   "units": "mm, degrees, mNm",
   "variant": "contact_rig",
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

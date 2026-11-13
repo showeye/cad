@@ -4,6 +4,7 @@ import itertools
 import math
 
 import pytest
+from cadkit.features.hardware import nut_m3, shaft_collar_4, shoulder_screw_4_m3, socket_screw_m3
 from cadkit.features.mechanical import bar_between, cord_loop, hex_prism, link, spoked_wheel
 from cadkit.features.motion import Belt, slider_crank
 from cadkit.features.text import engraving
@@ -74,3 +75,14 @@ def test_engraving_uses_downward_tool_convention():
     assert tool.is_valid
     assert tool.bounding_box().max.Z == pytest.approx(0, abs=1e-6)
     assert tool.bounding_box().min.Z == pytest.approx(-0.8)
+
+
+def test_hardware_envelopes_and_bearing_planes():
+    shoulder = shoulder_screw_4_m3(12)
+    assert tuple(shoulder.bounding_box().size) == pytest.approx((7, 7, 22))
+    assert shoulder.bounding_box().min.Z == pytest.approx(-19)
+    assert shoulder.bounding_box().max.Z == pytest.approx(3)
+    for part in (shoulder, socket_screw_m3(8), nut_m3(), shaft_collar_4()):
+        assert not validate(part, FDM)
+    with pytest.raises(ValueError):
+        shoulder_screw_4_m3(13)
