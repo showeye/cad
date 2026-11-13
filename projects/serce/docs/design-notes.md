@@ -2,8 +2,8 @@
 
 Engineering reasoning that is not in the look brief. Sections 1 to 8 were written on 2026-11-13,
 after the concept was approved and before any product geometry existed: sections 4 to 7 are the
-plan. **Section 9 is the state of the motion proof as built, written at the end of the second
-session on the same day. Where it differs from sections 4 and 5, section 9 is right.**
+plan. **Section 9 is the motion proof as built and finished (third session, same day). Where it
+differs from sections 4 and 5, section 9 is right.**
 
 Coordinates as in `concept/heart_concept.py`: origin at the heart's hidden tip, z up, front is -y,
 the viewer's left is -x. Units mm and degrees.
@@ -293,11 +293,11 @@ Cost, for the price rule (retail about 2 × cost, 25% to the retailer, ideally 3
 - One interior detail (stove) at final scale in four colours.
 - Heat soak: the coupons at 60 °C for two hours.
 
-## 9. The motion proof as built (state at the end of session 2, 2026-11-13)
+## 9. The motion proof as built (finished 2026-11-13, waiting for the client's review)
 
-The stage is not finished. The geometry, the kinematics and the tests exist and pass, with one
-known defect (9.3, item 1). The renders, the animation and the review document for the client do
-not exist yet. Section 9.5 lists what is left.
+The stage is finished: the geometry, the kinematics and the tests exist and pass, the one known
+defect of session 2 is fixed (9.6), and the renders, the animation and the review document
+`docs/motion-proof.md` exist. Nothing is committed and the client has not answered yet (9.5).
 
 ### 9.1 What exists
 
@@ -311,8 +311,10 @@ not exist yet. Section 9.5 lists what is left.
 | `src/serce/_room.py` | The concept kitchen as a stand-in, clipped to the space the real room may fill |
 | `src/serce/_kinematics.py` | Ring angle to slider, pins and wing angle; the statics model of the ring torque |
 | `tests/test_motion.py` | The proof as tests (9.4) |
-| `tests/test_model.py`, `tests/snapshots/honey.json` | The standard gate. The snapshot is of work in progress: regenerate it when the geometry changes |
-| `tools/motion_report.py` | Figures and numbers for the review document. **Written, never run** |
+| `tests/test_model.py`, `tests/snapshots/honey.json` | The standard gate. The snapshot is of the model as reviewed |
+| `tools/motion_report.py` | Figures and numbers of the review document: strip, film, charts, two labelled cross-sections, the two beds, `dist/serce/0.2.0/motion-numbers.json` |
+| `tools/root_sight.py` | Dense rays down both hinge roots (9.6); about ten minutes a pose |
+| `docs/motion-proof.md`, `docs/img/motion/` | The review document for the client and its pictures |
 
 The model is `serce`, version `0.2.0`, one variant `honey`. `Params.turn` poses it: 0 closed, 180
 open. Hidden printed parts are grey in the model so that they can be read; they are black in
@@ -324,14 +326,16 @@ offsets), `features/mechanical.cam_groove` and `features/motion.cam_rate`, `cam_
 and a generalised `render.py` / `_blender.py`: a product module may define `presentation` (views
 fitted to the model, stills at animation poses, hidden parts per view, materials, sheet text).
 Carnall's five renders were rendered again through it and differ from the old ones by one grey
-level at most; its sheet text moved into `carnall/model.py`. **The fitted views and Serce's
-`presentation()` have not been run through Blender yet.**
+level at most; its sheet text moved into `carnall/model.py`. The fitted views and Serce's
+`presentation()` ran through Blender 5.2 on the first try; a full build with renders and film
+takes two minutes.
 
 ### 9.2 The design as built, and why it differs from section 4
 
 **Parts.** Printed: wing left, wing right (each coal and lining in one print), back half (coal,
-lining; includes the knuckles and the cellar block), coal bed, slider, pusher, chassis, cam disc,
-grip ring, foot. Ten printed parts, plus the room (a stand-in here). Bought: 2 hinge pins 2 × 55,
+lining; includes the knuckles and the cellar block), coal bed, two keyhole plugs (9.6), slider,
+pusher, chassis, cam disc, grip ring, foot. Twelve printed parts, plus the room (a stand-in
+here). Bought: 2 hinge pins 2 × 55,
 1 follower pin 3 × 12, 1 compression spring, 1 M4 × 12 button-head screw and nut, 4 M3 × 8 screws
 and 4 short M3 heat-set inserts (two hold the back half, two hold the chassis to the bed's legs),
 6 disc magnets 5 × 2, 1 fender washer M24 (ISO 7093, 26 × 72 × 5, about 139 g) as ballast, 3
@@ -339,7 +343,7 @@ silicone feet. All sizes are placeholders to verify against datasheets.
 
 **Size.** Closed 83.5 × 76.9 × 107.9 mm, open 133.4 mm wide. That is 4 mm taller than the concept:
 the ballast washer needs 5 mm and the clutch needs a floor in the grip ring. Solid volume of the
-printed parts is 125 cm³ (155 g if printed solid; less with infill).
+printed parts is 126 cm³ (156 g if printed solid; less with infill).
 
 **Seams.** The outer 1.0 mm of the coal wall stops 0.15 mm short of each seam plane, so the closed
 heart shows a groove 0.3 mm wide and 1.0 mm deep with a closed, black bottom. Behind it:
@@ -388,7 +392,8 @@ that closes the grip ring from above, with a skirt round the ring's neck. It is 
 roof 4.5 mm thick, stands on two legs on the chassis, and carries the pads for the pins. The short
 ridge of the concept (12.5 mm) is `Params(bed_ridge=12.5)`; **it does not leave room for the
 follower at the back** (the slider hits the bed's end wall when open), which is a second reason
-for the long ridge besides the gap under the heart. The client has not seen either yet.
+for the long ridge besides the gap under the heart. Both are shown side by side in the review
+document.
 
 **Drive.** Grip ring, cam disc, follower, slider, as planned, with these differences:
 
@@ -424,31 +429,35 @@ floor stands inside the foot's rim, so neither horizontal gap gives a straight v
 
 ### 9.3 Known defects and open points
 
-1. **A glimpse of the slider with the wings open** (`test_drive_is_hidden[180.0]`, marked as an
-   expected failure). One viewing direction, about 20° off a hinge axis, looks down the 0.2 mm
-   clearance round a root's collar, on through the part of the keyhole that cuts the shoulder,
-   and reaches the slider 20 mm below. A ray can travel up to 41° of arc inside that clearance,
-   so narrowing the lever's neck further cannot close it. Options: (a) a small printed plug that
-   closes each keyhole from below after the wings are in (two more parts, robust, and the lever
-   could be full width again and three times as strong); (b) accept it and state the criterion
-   as "nothing but 0.2 mm clearances"; (c) a smaller clearance at the collar. Recommended: (a).
+1. **Fixed: a glimpse of the slider with the wings open.** One viewing direction, about 20° off
+   a hinge axis, looked down the 0.2 mm clearance round a root's collar, on through the part of
+   the keyhole that cuts the shoulder, and reached the slider 20 mm below. A ray can travel up
+   to 41° of arc inside that clearance, so narrowing the lever's neck could not close it. Each
+   keyhole now has a plug: 9.6, which also states the one limit that is left.
 2. Not modelled: the press zone of the hinge pin, the edition tag under the foot, the real room.
 3. Not verified, all for the test prints: magnet clutch torque and ring drag; the spring (2.5 N
-   preload, 3 N/mm assumed); the strength of root, lever and crank pin; the 0.3 mm seam groove
-   and the lap at print tolerance.
+   preload, 3 N/mm assumed); the strength of root, lever and crank pin; the 0.3 mm seam groove,
+   the lap and the 0.1 mm fit of the plugs at print tolerance.
 4. Printing: the wing has root and lever under its foot, so it prints on support under the foot
    (a hidden face). The bed's hollow has a ceiling at 37° that needs support inside. The root
    bores stand 37° from vertical in the bed.
 5. Still as in the concept: five facet slivers under 4 mm, the barrel as a plain cylinder.
-6. For the client: the flank ridge (still unanswered), the collar hairline at its foot, the long
-   ridge of the bed, 4 mm more height, the firm last 20° of closing.
+6. For the client (asked in the review document, section 6): the flank ridge (unanswered since
+   the concept), the collar hairline at its foot, the long ridge of the bed, 4 mm more height,
+   the idle first 23° of turn, the firm last 23° of closing.
+7. The ring's drag (12 N mm) is a guess and low: 20 N mm at the rim is about 55 g on a
+   fingertip. The mechanism adds between -3 and +20 N mm to whatever drag is chosen, so more drag
+   makes the feel both heavier and more even. Choose it on the first prototype.
 
 ### 9.4 What the tests prove
 
-`uv run pytest projects/serce` (about three and a half minutes):
+`uv run pytest projects/serce` (24 tests, about four and a half minutes, all pass):
 
 - no two parts overlap closed; none overlap at 126 positions of a full turn (every 2.5° while the
-  wings move, every 0.5° at first opening); the assembly path is free;
+  wings move, every 0.5° at first opening); the assembly path is free, with each plug riding in
+  on its lever;
+- each plug rests on its seat, stands 0.1 mm from its wing, and cannot be moved 0.3 mm up or
+  down, closed, at mid-swing or open; all of it lies under the back half;
 - closed: wing and back half touch on the seat, the wings stand 0.1 mm apart, the groove measures
   0.3 mm at both seams, the wings stand 0.3 mm over the bed, the spring is squeezed by 0.8 mm;
 - closed, 47 viewers all round and along both seam planes see no point of the room or the linings;
@@ -456,19 +465,93 @@ floor stands inside the foot's rim, so neither horizontal gap gives a straight v
 - effort within 5 to 40 N mm in both directions, without a step over 10 N mm;
 - open: over 97% of the room in view from the front, from 45° to either side and from above;
   the share in view grows steadily from 23° on;
-- the drive is hidden closed and at mid-swing; open, see 9.3 item 1;
+- the drive is hidden closed, at mid-swing and open;
 - the animation poses match the CAD poses; bad parameters fail before any geometry is built.
 
-### 9.5 What is left to close the stage
+### 9.5 Where the stage stands, and what comes next
 
-1. Decide and fix 9.3 item 1, then run the tests and regenerate the snapshot
-   (`CADKIT_UPDATE_SNAPSHOTS=1 uv run pytest projects/serce/tests/test_model.py`).
-2. `uv run cadkit build serce -v honey --render --animate`. Expect to debug the fitted views in
-   `cadkit/_blender.py` and `serce.model.presentation` on the first run.
-3. `uv run python projects/serce/tools/motion_report.py` (strip, charts, cut views, the two beds,
-   numbers), then write `docs/motion-proof.md` for the client: animation, the five steps, each
-   requirement of section 5 with its evidence, what changed against the plan and why, the
-   questions in 9.3 item 6.
-4. Update `README.md`, stream the model to the viewer (`uv run cadkit show serce -v honey`), and
-   stop for the client's review. Commit only when the client asks.
+Done: the fix of 9.3 item 1, the snapshot, the build with renders and film
+(`dist/serce/0.2.0/honey/`), the report pictures (`docs/img/motion/`), and
+`docs/motion-proof.md`. **The stage stops here for the client's review.** Nothing is committed;
+commit only when the client asks.
 
+Next, once the client has answered the nine questions of the review document:
+
+1. If the flank ridge, the collar hairline or the long bed is rejected, that is a redesign of
+   the hinge or the drive before anything else (section 3 lists the hinge options).
+2. Otherwise step 4 of the brief, the test prints of section 8, with these added by this stage:
+   the root and lever coupon carries its plug, and a clutch coupon measures the slip torque.
+   Each coupon comes with what to check and what to send back.
+
+### 9.6 The keyhole plug, and what the last session learned
+
+**Why not from below, as session 2 recommended.** A plug pushed in from below has nothing under
+it. It would be held by a press fit, which is PLA stressed at rest (section 6 rules that out,
+and it loosens in a warm window), or by glue, which stops a wing from being replaced. If it came
+loose it would fall into the drive.
+
+**Why not dropped in from above.** What closes the sight line is the shoulder under the root's
+collar. A plug dropped in after the wing cannot reach under the collar, and without that piece
+of shoulder a ray still passes (the gap between journal and plug is open downwards).
+
+**What was built.** The plug has the keyhole's outline (0.1 mm smaller a side) and carries the
+missing piece of the shoulder. It is laid on the lever, against the journal, before the wing
+goes in, and rides down the keyhole with it. The lever swings away underneath; the plug stays.
+It hangs by a round head in a seat sunk into the bed's facet, under the back half. The collar
+and the back half lie 0.1 mm over it, so it cannot lift out, and it comes out again with the
+wing. It carries nothing: the wing still rests on the bed's own shoulder. 255 mm³, 0.3 g, coal
+black. Left and right are mirror images.
+
+| New parameter | Value | Meaning |
+|---|---|---|
+| `keyhole_clear` | 0.4 | Lever in its keyhole (was a literal in `_base.py`) |
+| `plug_gap` | 0.1 | Plug in its keyhole, each side |
+| `plug_drop` | 0.1 | Plug below the facet, the collar and the roof's underside |
+| `plug_lip` | 0.6 | Head over its seat |
+| `plug_head` | 1.2 | Depth of the head |
+
+Code: `_base.keyhole_plug`, `_base.plug_head_radius`, `PLUG_HEAD_INSET` (the head's centre sits
+1 mm short of the crank pin's axis, to keep about 1.5 mm of bed between the two seats at the ridge),
+the seat in `_base.coal_bed`, `_shell.keyhole_direction`, the parts in `model._neutral`.
+
+**Found on the way.**
+
+- The two keyholes run into each other inside the roof under the ridge (they did before; the
+  bed simply had one merged hole there), and each wing's lever comes down through the other
+  keyhole's space on its way in. So each plug is cut by the other lever's way down. A first
+  attempt cut the plug by the plane of the other roof instead, which removed nearly all of it
+  (the roof is the union of the two slabs, not their intersection).
+- At the bed's facet the whole keyhole lies under the back half, outside 2.9 mm from the hinge
+  axis. The neck's front wall is only 0.2 mm inside the front edge of the cellar where it
+  meets the bore, so the head has no lip there: it is a disc near the far end only.
+- The lever's neck stays as narrow as it was. Session 2 hoped a plug would let it be full
+  width; it cannot, because the keyhole must stay under the back half.
+
+**Proof.** `test_drive_is_hidden[180.0]` passes without the expected-failure mark. Because the
+glimpse had been found by one viewer out of 47, `tools/root_sight.py` looks harder: every
+direction within 60° of each hinge axis, 4° apart (687 a root), at points 0.8 mm apart on
+everything under the bed within 26 mm of the root. Wings open: 27,586 points, none seen. Half
+open: 32,686 points, none seen. Control, the same model with the plugs taken out (points 1.2 mm
+apart): the slider is seen again, at one point down the left root. The control is weak (one
+point), so a finer control would be worth running if this check is ever relied on alone. It is
+too slow for the suite (ten minutes a pose).
+
+**The one limit left.** The plug's own fit, 0.1 mm a side, is not covered by a step along the
+neck's front wall, just outside the bore. Nothing put in from above can overlap there: a lip
+under the collar would be 0.3 mm wide, which a 0.4 mm nozzle cannot print. In the model there
+is, in principle, a slot of about 0.1 × 0.4 mm in line from one direction, with black parts
+behind it; the dense check did not find it. It is stated to the client as a known limit, and
+the root coupon shows what the printer makes of it.
+
+**Renders and report.**
+
+- `presentation()` now has 12 stills. The first mechanism view (from above, wings in the way)
+  explained nothing and was replaced by a low front view with the bed hidden, plus a view of
+  the cam under the slider. The side view is lifted 8° so that it stands on the floor.
+- The five steps are at 0°, 30°, 80°, 120° and 180° of turn. With the 23° dwell, "first light"
+  is a 2 mm line of honey at 30°; at 40° the crack is already 7 mm.
+- The cut views drawn with pyvista were unreadable (open shells, black on black).
+  `motion_report.sections` now draws exact cross-sections (`build123d.section`) as filled,
+  labelled outlines.
+- The bed comparison is seen from the left side, where the overhang of the short ridge shows.
+- Numbers quoted in the review document: `dist/serce/0.2.0/motion-numbers.json`.

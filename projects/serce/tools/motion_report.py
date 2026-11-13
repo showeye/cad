@@ -7,7 +7,7 @@ Run from the repository root, after the build has rendered the model:
     uv run python projects/serce/tools/motion_report.py numbers    # only print the numbers
 
 It copies the renders into docs/img/motion, builds the strip of the five opening steps, draws
-the motion and effort charts and two cut views of the drive, renders the two coal beds side by
+the motion and effort charts and two labelled cross-sections, renders the two coal beds side by
 side, and prints the measured numbers that the document quotes.
 """
 
@@ -124,10 +124,10 @@ def fitted(source: Path, width: int) -> Image.Image:
 
 def copy_renders():
     names = {"hero": "closed", "open": "open", "back": "back", "top": "counter"}
-    names |= {"side": "side", "mechanism": "mechanism"}
+    names |= {"side": "side", "mechanism": "mechanism", "cam": "cam"}
     for source, target in names.items():
         fitted(DIST / f"{source}.png", 1100).save(IMG / f"motion_{target}.png", optimize=True)
-    labels = ["closed", "40°: first light", "80°: the bud", "120°: the room", "180°: fully open"]
+    labels = ["closed", "30°: first light", "80°: the bud", "120°: the room", "180°: fully open"]
     tiles = [fitted(DIST / f"step_{i}.png", 400) for i in range(5)]
     strip = Image.new("RGB", (5 * 400 + 6 * 16, tiles[0].height + 110), PAPER)
     draw = ImageDraw.Draw(strip)
@@ -155,21 +155,25 @@ def copy_renders():
 
 
 def bed_comparison():
-    """The two coal beds, closed, from the same camera: the short ridge and the full-depth one."""
+    """The two coal beds, closed, from the left side: the short ridge and the full-depth one."""
     blender = Path("/Applications/Blender.app/Contents/MacOS/Blender")
     script = Path(sys.modules["cadkit.render"].__file__).with_name("_blender.py")
     tiles = []
     for key, ridge, label in (
-        ("bed_short", 12.5, "A  short ridge (as in the concept): the heart hovers at the front"),
+        (
+            "bed_short",
+            12.5,
+            "A  short ridge (as in the concept): the heart overhangs it, front and back",
+        ),
         (
             "bed_full",
             P.bed_ridge,
-            "B  full-depth ridge (this proof): the wings sit on it everywhere",
+            "B  full-depth ridge (this proof): the heart sits on it all the way",
         ),
     ):
         params = Params(bed_ridge=ridge)
         spec = product.presentation(params)
-        view = {"azimuth": -38, "elevation": 6, "size": (1000, 900), "margin": 1.04}
+        view = {"azimuth": -82, "elevation": 5, "size": (1000, 900), "margin": 1.04}
         view["box"] = ((-46, -42, -base.total_height(params)), (46, 42, 88))
         spec["views"] = {key: view}
         module = SimpleNamespace(presentation=spec)
@@ -289,55 +293,160 @@ def charts():
 
 
 # ---------------------------------------------------------------- cut views
+SECTION_FILL = {  # by name prefix; linings and the room keep their own colours
+    "wing_": "#3B3B42",
+    "back": "#2C2C31",
+    "coal_bed": "#4A4A52",
+    "plug_": "#77777F",
+    "grip_ring": "#5C5C66",
+    "foot": "#232327",
+    "slider": "#2F6DB0",
+    "pusher": "#2A9D8F",
+    "chassis": "#A3A3AE",
+    "cam_disc": "#8E6BBF",
+    "reference_cam_magnet": "#C0392B",
+    "reference_ring_magnet": "#C0392B",
+    "reference_": "#D5DBE1",
+}
+OWN_COLOUR = ("wing_left_lining", "wing_right_lining", "back_lining", "reference_room")
+
+
+def draw_section(ax, parts, plane, axes):
+    """Fill the exact cross-section of every part in `plane`; `axes` picks the two world axes."""
+    from build123d import section
+    from matplotlib.colors import to_hex
+    from matplotlib.patches import PathPatch
+    from matplotlib.path import Path as Outline
+
+    for name, shape in parts.items():
+        cut = section(obj=shape, section_by=plane)
+        if cut is None:
+            continue
+        if name.startswith(OWN_COLOUR):
+            fill = to_hex(tuple(shape.color)[:3])
+        else:
+            fill = next(v for k, v in SECTION_FILL.items() if name.startswith(k))
+        steel = name.startswith("reference_") and not name.startswith("reference_room")
+        for face in cut.faces():
+            points, codes = [], []
+            for wire in (face.outer_wire(), *face.inner_wires()):
+                count = max(24, int(wire.length / 0.08))
+                ring = np.array([tuple(wire.position_at(u)) for u in np.linspace(0, 1, count)])
+                points += list(ring[:, axes])
+                codes += [Outline.MOVETO] + [Outline.LINETO] * (count - 2) + [Outline.CLOSEPOLY]
+            ax.add_patch(
+                PathPatch(
+                    Outline(points, codes),
+                    facecolor=fill,
+                    edgecolor="#3A444D" if steel else PAPER,
+                    lw=0.35,
+                    joinstyle="round",
+                )
+            )
+
+
 def sections():
-    import pyvista as pv
+    """Two true cross-sections of the assembly, with the parts named."""
+    import matplotlib
 
-    def mesh(shape):
-        vertices, triangles = shape.tessellate(0.05, 0.2)
-        vertices = np.array([tuple(v) for v in vertices])
-        faces = np.hstack([np.full((len(triangles), 1), 3), np.array(triangles)]).ravel()
-        return pv.PolyData(vertices, faces)
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from build123d import Plane
+    from matplotlib import patheffects
 
-    def cut(path, turn, normal, origin, azimuth, focus, scale, size=(1300, 900)):
-        plotter = pv.Plotter(off_screen=True, window_size=size)
-        plotter.set_background(PAPER)
-        for shape in build(Params(turn=turn)).values():
-            body = mesh(shape).clip(normal=normal, origin=origin)
-            if body.n_points:
-                plotter.add_mesh(body, color=tuple(list(shape.color)[:3]), specular=0.2)
-        a = math.radians(azimuth)
-        plotter.camera.position = np.array(focus) + 400 * np.array(
-            [math.sin(a), -math.cos(a), 0.12]
-        )
-        plotter.camera.focal_point = focus
-        plotter.camera.up = (0, 0, 1)
-        plotter.camera.parallel_projection = True
-        plotter.camera.parallel_scale = scale
-        plotter.add_light(pv.Light(position=(-200, -300, 400), intensity=0.5))
-        plotter.screenshot(str(path))
-        plotter.close()
+    def sheet(path, size, limits, title, parts, plane, axes, labels):
+        fig, ax = plt.subplots(figsize=size, facecolor=PAPER)
+        ax.set_facecolor(PAPER)
+        draw_section(ax, parts, plane, axes)
+        (x0, x1), (y0, y1) = limits
+        halo = [patheffects.withStroke(linewidth=2.6, foreground=PAPER)]
+        for text, at, to in labels:
+            note = ax.annotate(
+                text,
+                xy=at,
+                xytext=to,
+                fontsize=10,
+                color=INK,
+                va="center",
+                ha="right" if to[0] < at[0] else "left",
+                arrowprops={"arrowstyle": "-", "color": INK, "lw": 0.7, "shrinkA": 2, "shrinkB": 0},
+            )
+            note.arrow_patch.set_path_effects(halo)  # the leaders cross dark parts
+            ax.plot(*at, "o", ms=3.2, color=INK, mec=PAPER, mew=0.7, zorder=5)
+        ax.plot([x1 - 14, x1 - 4], [y1 - 6, y1 - 6], color=INK, lw=1.5)
+        ax.text(x1 - 9, y1 - 4.8, "10 mm", ha="center", fontsize=9, color=INK)
+        ax.set_title(title, loc="left", fontsize=13, color=INK)
+        ax.set_aspect("equal")
+        ax.set_xlim(x0, x1)
+        ax.set_ylim(y0, y1)
+        ax.axis("off")
+        fig.tight_layout()
+        fig.savefig(path, dpi=110, facecolor=PAPER)
+        plt.close(fig)
 
-    # through both hinge axes (the seam plane), seen from the front; through the middle, from the side
-    cut(IMG / "motion_cut_front.png", 180, (0, -1, 0), (0, -0.05, 0), 0, (0, 0, 8), 33)
-    cut(
-        IMG / "motion_cut_side_closed.png",
-        0,
-        (1, 0, 0),
-        (0.05, 0, 0),
-        90,
-        (0, 0, 20),
-        52,
-        (1300, 1000),
+    left, right = -44, 44
+    sheet(
+        IMG / "motion_section_side.png",
+        (11.5, 10.5),
+        ((-78, 78), (-27, 92)),
+        "Section through the middle, seen from the left: closed. Front is on the left.",
+        build(P),
+        Plane.YZ.offset(0.3),
+        [1, 2],
+        [
+            ("wing: coal outside,\nhoney lining inside", (-20.5, 50), (left, 62)),
+            ("room (stand-in)", (-5, 39), (left, 44)),
+            ("screws that hold\nthe back half", (-12, 19.5), (left, 28)),
+            ("coal bed, hollow", (-30, 10), (left - 4, 14)),
+            ("pusher and its spring", (-4, 0), (left - 4, 3)),
+            ("slider", (-13, -3), (left - 4, -3)),
+            ("grip ring", (-37.5, -8), (left - 4, -9)),
+            ("ballast washer, steel", (-24, -16.5), (left - 4, -15)),
+            ("foot", (-36, -19.5), (left - 4, -21)),
+            ("back half", (21.5, 52), (right, 62)),
+            ("back wall of the room", (13.8, 44), (right, 44)),
+            ("cellar block of the back half", (5, 27), (right, 30)),
+            ("keyhole plug (its tip)", (9.5, 19.8), (right, 22)),
+            ("post of a pin bearing", (-2.5, 10.5), (right, 13)),
+            ("follower pin in the cam groove", (10.8, -4), (right + 4, 3)),
+            ("chassis and its hub", (20, -5.5), (right + 4, -3)),
+            ("cam disc", (17, -9), (right + 4, -9)),
+            ("clutch magnets", (27.5, -11), (right + 4, -15)),
+            ("tie screw and nut", (0, -17), (right + 4, -21)),
+        ],
     )
-    cut(
-        IMG / "motion_cut_side_open.png",
-        180,
-        (1, 0, 0),
-        (0.05, 0, 0),
-        90,
-        (0, 0, 20),
-        52,
-        (1300, 1000),
+    # where the levers lie in the plane of both hinges: the wings at half their swing
+    low, high = 0.0, 180.0
+    for _ in range(40):
+        middle = (low + high) / 2
+        if kin.wing_angle(P, middle) < P.wing_max / 2:
+            low = middle
+        else:
+            high = middle
+    sheet(
+        IMG / "motion_section_front.png",
+        (13, 7.6),
+        ((-84, 84), (-27, 52)),
+        f"Section through both hinges, seen from the front: wings half open (ring at {low:.0f}°).",
+        build(Params(turn=low)),
+        Plane.XZ.offset(0.4),
+        [0, 2],
+        [
+            ("wing, cut along its flank", (-31, 38), (-50, 44)),
+            ("hinge pin, steel 2 mm", (-24.5, 33), (-50, 36)),
+            ("root of the wing:\ncollar on a shoulder in the bed", (-10.5, 13.5), (-50, 25)),
+            ("coal bed", (-25, 6), (-50, 13)),
+            ("lever and crank pin,\none piece with the wing", (-14.5, 4), (-50, 4)),
+            ("grip ring", (-37.5, -6), (-50, -6)),
+            ("ballast washer", (-25, -16.5), (-50, -16)),
+            ("cellar block of the back half", (6, 26), (50, 40)),
+            ("room floor", (12, 30.5), (50, 32)),
+            ("slider", (15, -3), (50, 12)),
+            ("leg of the bed, screwed to the chassis", (22.5, -1), (50, 4)),
+            ("chassis and its hub", (30, -6), (50, -4)),
+            ("cam disc", (28, -9), (50, -10)),
+            ("foot", (36.5, -18), (50, -18)),
+        ],
     )
 
 

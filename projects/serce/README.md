@@ -3,35 +3,36 @@
 A kinetic Silesian souvenir: a heart of coal that opens to show a warm Silesian kitchen inside.
 Everything for this product lives in this folder.
 
-## Status (2026-11-13, end of the second session)
+## Status (2026-11-13, end of the third session)
 
-**Step 3 of the brief, the motion proof, is in progress: the model and its tests exist, the
-renders and the review document do not. Nothing of step 3 has been shown to the client yet.**
+**Step 3 of the brief, the motion proof, is finished and waits for the client's review:
+`docs/motion-proof.md`. Nothing of it is committed. Stop here until the client has answered.**
 
-Done in this session:
+What exists:
 
 - `projects/serce` is a `cadkit` package (`serce`, version 0.2.0, variant `honey`): the real
   faceted Bryła heart split into two wings and a back half, the hinges, and the whole drive in the
-  base. 71 named solids, every fit a parameter. The room is a stand-in.
-- The proof is a test suite: no overlap at 126 positions of a full turn, a free assembly path,
-  measured seams, the closed heart shows nothing of the inside, the open room is fully in view,
-  the ring torque stays in a band.
-- `cadkit` gained solids from half-spaces, a cam groove, a ray-cast visibility check, the U1
-  process and a renderer that products can configure. Carnall renders the same as before.
-
-**One known defect:** with the wings open, one viewing direction still glimpses the slider through
-the 0.2 mm clearance round a hinge root. The test for it is marked as an expected failure. The
-recommended fix is a small plug for each assembly keyhole.
+  base. 73 named solids, 12 printed parts, every fit a parameter. The room is a stand-in.
+- The proof is a test suite (24 tests, all pass): no overlap at 126 positions of a full turn, a
+  free assembly path, measured seams, the closed heart shows nothing of the inside, the open room
+  is fully in view, the ring torque stays in a band, the drive is hidden closed, half open and
+  open.
+- The one defect of the second session, a glimpse of the slider past a hinge root with the wings
+  open, is fixed by a small plug in each assembly keyhole. It rides in on the lever and is held
+  by the wing's collar and the back half, with no glue, press fit or screw.
+- The build with renders and the looping film is in `dist/serce/0.2.0/honey/`; the pictures of
+  the review document are in `docs/img/motion/`.
 
 Approved earlier (step 2): Look 1 "Bryła", opening A "Skrzydła" (wings), honey lining, about 150 g
 of steel ballast, a room with no figures and no religious objects, an edition tag under the foot.
 
-Still open with the client:
+Asked in the review document (section 6), not answered yet:
 
-- Whether the rounded ridge along each flank is acceptable (unanswered since the concept).
-- New from this stage, to show in the review: a round hairline at the foot of each ridge, the
-  long ridge of the coal bed, 4 mm more height (108 mm), a firmer last 20° of closing.
+- The rounded ridge along each flank (open since the concept), the round hairline at its foot,
+  the long ridge of the coal bed, 4 mm more height (108 mm), the idle first 23° of turn, the
+  firmer last 23° of closing.
 - The filament choice and what "cost" includes in the price rule.
+- The go-ahead for the test prints (step 4).
 
 **An earlier attempt at the later steps was rejected by the client:** "The heart was just one box,
 with gaps. It simply was not reflecting the idea." It is on the branch `projects/heart/codex`. Do
@@ -40,20 +41,20 @@ model writes to `dist/serce/0.2.0`.
 
 ## How to continue
 
-1. Read `docs/design-notes.md`, **section 9**: the design as built and why, the known defects,
-   what the tests prove, and the four steps left to close the stage (9.5). Sections 1 to 8 are
-   the earlier plan; `docs/brief.md` is the source of truth.
-2. In short: fix the glimpse (9.3, item 1), regenerate the snapshot, render
-   (`cadkit build serce -v honey --render --animate`, not run yet), run
-   `tools/motion_report.py` (not run yet), write `docs/motion-proof.md` for the client.
-3. Stop for the client's review when the motion proof is done.
+1. Read the client's answers to the nine questions of `docs/motion-proof.md`, section 6.
+2. Read `docs/design-notes.md`, **section 9**: the design as built and why (9.2), the open points
+   (9.3), what the tests prove (9.4), what comes next (9.5), the keyhole plug and its one limit
+   (9.6). Sections 1 to 8 are the earlier plan; `docs/brief.md` is the source of truth.
+3. If the client rejects the flank ridge, the hairline or the long bed, that is a redesign first.
+   Otherwise go on to step 4 of the brief, the test prints (design notes, section 8 and 9.5).
 
 ```
 uv sync --all-packages
-uv run pytest projects/serce                      # about three and a half minutes
+uv run pytest projects/serce                      # about four and a half minutes
 uv run cadkit show serce -v honey                 # the model in the OCP viewer, closed
-uv run cadkit build serce -v honey --render --animate
-uv run python projects/serce/tools/motion_report.py
+uv run cadkit build serce -v honey --render --animate    # two minutes
+uv run python projects/serce/tools/motion_report.py      # pictures and numbers of the review
+uv run python projects/serce/tools/root_sight.py         # dense rays down both roots, 20 minutes
 ```
 
 ## Where things are
@@ -62,10 +63,12 @@ uv run python projects/serce/tools/motion_report.py
 |---|---|
 | `docs/brief.md` | The client brief, verbatim. Source of truth. Read this first. |
 | `docs/look-brief.md` | The approved look brief: research, 25 references, form, interior, palette, the opening, three looks, three openings, corrections, what could not be verified, decisions, stages |
-| `docs/design-notes.md` | Engineering reasoning. Sections 1 to 8: the plan (decisions, the acceptance test set by the failed build, the hinge, planned parts, constraints, filament and cost, test prints). **Section 9: the motion proof as built, its defects and what is left** |
+| `docs/design-notes.md` | Engineering reasoning. Sections 1 to 8: the plan (decisions, the acceptance test set by the failed build, the hinge, planned parts, constraints, filament and cost, test prints). **Section 9: the motion proof as built, its open points and what comes next** |
 | `pyproject.toml`, `src/serce/` | The product package; the modules are listed in design notes 9.1 |
 | `tests/` | The motion proof as tests, and the geometry snapshot |
-| `tools/motion_report.py` | Figures and numbers for the review document (written, not run yet) |
+| `docs/motion-proof.md`, `docs/img/motion/` | **The review document of step 3 for the client, and its pictures** |
+| `tools/motion_report.py` | Builds those pictures and the numbers the document quotes |
+| `tools/root_sight.py` | Dense ray check of the two hinge roots (design notes 9.6) |
 | `docs/img/` | Concept renders, opening strips and mechanism diagrams used by the look brief |
 | `concept/heart_concept.py` | Throwaway massing geometry: the three looks, the room, the base, the three openings. `wing_parts()` returns the wings design sorted by what moves, with the hinge axes |
 | `concept/look_concepts.py` | Builds the concept scenes, sends them to the OCP viewer, exports STL files to `concept/_build/` |

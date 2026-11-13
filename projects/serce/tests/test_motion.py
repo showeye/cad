@@ -92,29 +92,67 @@ def test_assembly_path_is_free():
     neutral = _neutral(P)
     u = heart.V_DIR
     left = ("wing_left", "wing_left_lining")
-    fixed = {k: neutral[k] for k in ("coal_bed", "wing_right", "wing_right_lining")}
+    fixed = {k: neutral[k] for k in ("coal_bed", "wing_right", "wing_right_lining", "plug_right")}
+    # the plug lies on the lever and comes to rest in its seat just before the wing does
+    rides = P.lever_clear + P.plug_drop
 
     def wing(angle, lift):
         return {
             k: Pos(*(u * lift)) * neutral[k].rotate(HINGE.axis(heart.LEFT), -angle) for k in left
         }
 
-    for lift in (0, 2, 5, 8, 12, 16, 22):
-        assert not overlaps({**fixed, **wing(P.keyhole, lift)}, set(left)), f"lift {lift}"
+    def plug(lift):
+        return {"plug_left": Pos(*(u * max(0.0, lift - rides))) * neutral["plug_left"]}
+
+    for lift in (0, 0.3, 1, 2, 5, 8, 12, 16, 22):
+        parts = {**fixed, **wing(P.keyhole, lift), **plug(lift)}
+        assert not overlaps(parts, {*left, "plug_left"}), f"lift {lift}"
     for angle in np.arange(P.keyhole, P.wing_max, -5.0):
-        assert not overlaps({**fixed, **wing(float(angle), 0)}, set(left)), f"angle {angle}"
+        parts = {**fixed, **wing(float(angle), 0), **plug(0)}
+        assert not overlaps(parts, set(left)), f"angle {angle}"
 
     closed = {k: neutral[k] for k in ("coal_bed", *left, "wing_right", "wing_right_lining")}
+    closed |= {k: neutral[k] for k in ("plug_left", "plug_right")}
     for dy in (0.5, 2, 5, 10, 20, 35, 50):
         for name in ("back", "back_lining"):
             hits = overlaps({**closed, name: Pos(0, dy, 0) * neutral[name]}, {name})
             assert not hits, f"back half {dy} mm behind: {hits}"
 
     rest = {k: neutral[k] for k in ("coal_bed", *left, "back", "back_lining", "wing_right")}
+    rest |= {k: neutral[k] for k in ("plug_left", "plug_right")}
     rest["other_pin"] = neutral["reference_hinge_pin_right"]
     for drop in (0, 5, 15, 30, 45, 58):
         pin = Pos(*(-u * drop)) * neutral["reference_hinge_pin_left"]
         assert not overlaps({**rest, "pin": pin}, {"pin"}), f"pin {drop} mm out"
+
+
+def test_keyhole_plugs_are_captive():
+    """Each plug hangs in its seat under the collar and the back half: it cannot leave."""
+    u = {"left": heart.V_DIR, "right": heart.mirrored(heart.V_DIR, heart.RIGHT)}
+    for turn in (0.0, 90.0, 180.0):
+        parts = posed(turn)
+        for side in ("left", "right"):
+            name = f"plug_{side}"
+            near = {k: parts[k] for k in (name, f"wing_{side}", "coal_bed", "back")}
+            assert parts[name].distance_to(parts["coal_bed"]) < 1e-6  # it rests on its seat
+            # it carries nothing and touches nothing that moves
+            assert parts[name].distance_to(parts[f"wing_{side}"]) == pytest.approx(
+                P.plug_drop, abs=1e-3
+            )
+            lifted = {**near, name: Pos(*(u[side] * 0.3)) * parts[name]}
+            stopped_by = {n for a, b, _ in overlaps(lifted, {name}) for n in (a, b)} - {name}
+            assert stopped_by == {f"wing_{side}", "back"}, f"{name} lifts out at {turn}"
+            dropped = {**near, name: Pos(*(-u[side] * 0.3)) * parts[name]}
+            assert overlaps(dropped, {name}), f"{name} falls out at {turn}"
+    # all of the plug and of its seat lies under the back half, which stands on the bed
+    parts = posed(0.0)
+    for side in ("left", "right"):
+        top = Pos(*(u[side] * (P.plug_drop + 0.05))) * parts[f"plug_{side}"]
+        proud = top & heart.skin(
+            P, heart.SIDES[side], -5.0, heart.along_axis(HINGE, heart.SIDES[side], z0=0.01)
+        )
+        assert proud.volume > 1.0
+        assert (proud - parts["back"]).volume < 1e-6
 
 
 # ---------------------------------------------------------------- closed: tight, on its seats
@@ -228,14 +266,7 @@ def test_reveal_grows_steadily():
 
 
 # ---------------------------------------------------------------- the drive stays hidden
-KEYHOLE_GLIMPSE = pytest.mark.xfail(
-    strict=True,
-    reason="Open, one direction still sees the slider down the clearance round a root's collar "
-    "and on through the assembly keyhole; see docs/design-notes.md, section 9.3",
-)
-
-
-@pytest.mark.parametrize("turn", [0.0, 90.0, pytest.param(180.0, marks=KEYHOLE_GLIMPSE)])
+@pytest.mark.parametrize("turn", [0.0, 90.0, 180.0])
 def test_drive_is_hidden(turn):
     parts = posed(turn)
     assert _seen(parts, lambda n: n.startswith(DRIVE), spacing=2.5) == 0

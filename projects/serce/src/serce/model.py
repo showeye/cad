@@ -82,6 +82,13 @@ class Params(BaseParams):
     crank_d: float = Field(default=5.0, ge=3, le=6, description="crank pin, printed")
     crank_len: float = Field(default=4.0, ge=3, le=8)
     keyhole: float = Field(default=197.5, ge=180, le=215, description="wing angle at insertion")
+    keyhole_clear: float = Field(default=0.4, ge=0.2, le=0.8, description="lever in its keyhole")
+    plug_gap: float = Field(default=0.1, ge=0.05, le=0.3, description="plug in its keyhole, a side")
+    plug_drop: float = Field(
+        default=0.1, ge=0.05, le=0.3, description="plug under facet and collar"
+    )
+    plug_lip: float = Field(default=0.6, ge=0.4, le=1.0, description="plug's head over its seat")
+    plug_head: float = Field(default=1.2, ge=0.8, le=2.0, description="depth of that head")
     pad_thick: float = Field(default=1.6, ge=1.2, le=3.0, description="pin bearing under the root")
     root_boss: float = Field(default=0.3, ge=0.2, le=1.0, description="root below the lever")
     pad_gap: float = Field(default=0.3, ge=0.2, le=1.0, description="root above that bearing")
@@ -143,6 +150,8 @@ class Params(BaseParams):
             raise ValueError("The root's collar needs a shoulder wider than its running clearance")
         if self.collar_depth > self.roof - 2.0:
             raise ValueError("The collar's shoulder leaves too little of the roof under it")
+        if self.plug_gap >= self.keyhole_clear:
+            raise ValueError("The plug must be no wider than the lever that passes its keyhole")
         if self.heel + self.hinge_gap > self.hinge_radius - 0.2:
             raise ValueError("Heel must stay lower than the barrel, or the hinge is see-through")
         if self.tongue and self.seam_depth + self.tongue_clear > self.wall - 0.6:
@@ -179,6 +188,8 @@ def _neutral(params: Params) -> dict:
     add("back", cut(back["coal"], *base.back_insert_pockets(params), what="back"), COAL)
     add("back_lining", back["lining"], HONEY)
     add("coal_bed", base.coal_bed(params), COAL)
+    for name, side in heart.SIDES.items():
+        add(f"plug_{name}", base.keyhole_plug(params, side), COAL)
     add("grip_ring", base.grip_ring(params), COAL)
     add("foot", base.foot(params), COAL_MATTE)
     add("slider", base.slider(params), MECHANISM)
@@ -307,7 +318,7 @@ def _render_poses(params: Params, steps: int = 72) -> list:
 
 
 FRAMES = 72  # animation poses per turn of the ring: one every 5 degrees
-STEPS = (0, 40, 80, 120, 180)  # the five steps of the opening in the look brief, ring degrees
+STEPS = (0, 30, 80, 120, 180)  # the five steps of the opening in the look brief, ring degrees
 
 
 def presentation(params: Params) -> dict:
@@ -316,8 +327,8 @@ def presentation(params: Params) -> dict:
     frame = {"box": ((-68, -42, table), (68, 42, 88))}  # the open piece, so every view matches
     hero = {"azimuth": -17, "elevation": 13, "size": (1400, 1200), "margin": 1.04, **frame}
     step = {"azimuth": -14, "elevation": 12, "size": (900, 900), "margin": 1.04, **frame}
-    cover = ("coal_bed", "grip_ring", "foot", "reference_ballast", "reference_foot_pad")
-    cover += ("reference_room", "back", "wing_left_lining", "wing_right_lining")
+    cover = ("coal_bed", "plug_", "grip_ring", "foot", "reference_ballast", "reference_foot_pad")
+    cover += ("reference_room", "back", "wing_left_lining", "wing_right_lining", "reference_tie")
     coal = {"roughness": 0.3, "coat": 0.3}
     honey = {"roughness": 0.5}
     views = {
@@ -325,13 +336,31 @@ def presentation(params: Params) -> dict:
         "open": {**hero, "frame": 180 * FRAMES // 360},
         "back": {**hero, "azimuth": 163},
         "top": {**hero, "azimuth": -20, "elevation": 42, "frame": 180 * FRAMES // 360},
-        "side": {**hero, "azimuth": -90, "elevation": 0},
+        "side": {**hero, "azimuth": -90, "elevation": 8},
+        # the drive with the coal bed, the ring and the foot taken away
         "mechanism": {
-            "azimuth": -28,
-            "elevation": 38,
-            "size": (1400, 1100),
+            "azimuth": -12,
+            "elevation": 22,
+            "size": (1400, 930),
+            "frame": 120 * FRAMES // 360,
+            "hide": (*cover, "reference_back_", "reference_leg_"),
+            "margin": 1.05,
+            "box": ((-42, -40, -14), (42, 40, 34)),
+        },
+        # the cam under the slider: chassis and wings taken away as well
+        "cam": {
+            "azimuth": -20,
+            "elevation": 55,
+            "size": (1400, 1050),
             "frame": 80 * FRAMES // 360,
-            "hide": cover,
+            "hide": (
+                *cover,
+                "chassis",
+                "wing_",
+                "reference_hinge",
+                "reference_leg",
+                "reference_back_",
+            ),
             "margin": 1.1,
         },
     }
@@ -360,6 +389,7 @@ def presentation(params: Params) -> dict:
             "wing_": coal,
             "back": coal,
             "coal_bed": coal,
+            "plug_": coal,
             "grip_ring": coal,
             "foot": {"roughness": 0.7},
             "reference_room": honey,

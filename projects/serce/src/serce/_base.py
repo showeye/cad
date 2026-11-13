@@ -200,8 +200,12 @@ def coal_bed(p):
         )
         additions.append(_mirror(f.location * (pad + post), side))
         # bore for the root, the keyhole the lever passes at assembly, the hole for the hinge pin
-        slot_dir = 180 + p.wing_max / 2 - p.keyhole
-        keyhole = Rot(0, 0, slot_dir) * shell.lever_outline(p, 0.4, -p.roof - 1.0, 1.0)
+        turned = Rot(0, 0, shell.keyhole_direction(p))
+        keyhole = turned * shell.lever_outline(p, p.keyhole_clear, -p.roof - 1.0, 1.0)
+        # seat of the plug's head, sunk into the facet under the back half
+        keyhole += turned * rod(
+            Plane.XY, plug_head_radius(p), -p.plug_head, 1.0, x=p.lever - PLUG_HEAD_INSET
+        )
         # the bore: the root's collar runs on the shoulder, which carries the wing and closes
         # the running clearance to any line of sight
         removals += [
@@ -227,6 +231,46 @@ def coal_bed(p):
         )
     body = fuse(body, *additions, what="bed")
     return cut(body, *removals, what="bed")
+
+
+# the head's centre lies this far from the crank pin's axis towards the root: clear of the ridge
+PLUG_HEAD_INSET = 1.0
+
+
+def plug_head_radius(p) -> float:
+    """Radius of the seat of the plug's head in the bed's facet."""
+    return p.lever_width / 2 + p.keyhole_clear + p.plug_lip
+
+
+def keyhole_plug(p, side: int):
+    """Plug that closes the assembly keyhole of `side` once the lever has passed it.
+
+    The keyhole cuts the shoulder that the root's collar runs on, and with it the one thing
+    that closes the collar's running clearance to lines of sight. The plug has the keyhole's
+    outline and puts the missing piece of the shoulder back, under the collar. So it cannot be
+    dropped in afterwards: it is laid on the lever, against the journal, and rides down the
+    keyhole with the wing. From then on it is captive without glue, press fit or screw: its
+    round head hangs in a seat in the bed's facet, the collar and the back half lie over it,
+    and it comes out again with the wing. It stands `plug_drop` back from the facet, the
+    collar and the roof's underside, so it carries nothing and touches nothing that moves.
+    """
+    turned = Rot(0, 0, shell.keyhole_direction(p))
+    top, bottom = -p.plug_drop, -p.roof + p.plug_drop
+    body = turned * shell.lever_outline(p, p.keyhole_clear - p.plug_gap, bottom, top)
+    body += turned * rod(
+        Plane.XY, plug_head_radius(p) - p.plug_gap, -p.plug_head, top, x=p.lever - PLUG_HEAD_INSET
+    )
+    # the collar's bore down to the shoulder, and the journal's bore through
+    body -= rod(Plane.XY, p.root_radius + p.journal_gap, -p.collar_depth - p.plug_drop, 1.0)
+    body -= rod(Plane.XY, p.journal_radius + p.journal_gap, -p.roof - 1.0, 1.0)
+    h = heart.hinge(p)
+    plug = h.frame.location * body
+    # The two keyholes run into each other under the ridge, and the other wing's lever comes
+    # down there on its way in: each plug keeps out of the other lever's way down.
+    way_down = p.roof + p.lever_clear + p.lever_thick + p.crank_len + 1.0
+    other = h.frame.location * (turned * shell.lever_outline(p, p.keyhole_clear, -way_down, 1.0))
+    plug -= other.mirror(Plane.YZ)
+    return _mirror(one(plug, "keyhole plug"), side)
 
 
 def neck_radius(p) -> float:

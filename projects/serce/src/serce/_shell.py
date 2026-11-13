@@ -69,6 +69,14 @@ def lever_outline(p, grow: float, z0: float, z1: float):
     return Pos(0, 0, z0) * extrude(Face(Wire(edges)), amount=z1 - z0, dir=(0, 0, 1))
 
 
+def keyhole_direction(p) -> float:
+    """Direction of the assembly keyhole in the hinge frame, degrees from local x.
+
+    It is where the lever points when the wing stands `keyhole` degrees from closed.
+    """
+    return 180 + p.wing_max / 2 - p.keyhole
+
+
 def hinge_tools(p, h: heart.Hinge, side: int) -> dict:
     """Solids about the hinge axis of `side`, in world coordinates."""
     f, r, gap = h.frame, p.hinge_radius, p.hinge_gap
