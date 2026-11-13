@@ -26,7 +26,7 @@ Z0 = 46.0  # sections at depth are the front outline scaled about (0, Z0)
 SWELL = 2.4  # superellipse exponent of the depth profile (2 = lens, higher = chunkier)
 
 WALL = 2.2  # coal wall
-LINING = 0.8  # warm lining inside the coal wall
+LINING = 1.2  # warm lining inside the coal wall (thinner lets the black show through)
 SEAM = 0.15  # half of the visible seam gap between shell parts
 
 # the V edges are tangent to the lobes, so a straight hinge can run along them
@@ -37,8 +37,21 @@ V_IN = np.array([math.cos(_tilt), 0.0, math.sin(_tilt)])  # perpendicular to it,
 V_TANGENT = math.sqrt(_d**2 - LOBE_R**2)  # distance from the tip to the tangent point
 Z_SEAT = 15.0  # height where the V edges meet the pedestal
 E_LEFT = V_DIR * (Z_SEAT / V_DIR[2])  # point on the left V edge at Z_SEAT
-HINGE_INSET = 3.2
-HINGE_P = E_LEFT + HINGE_INSET * V_IN  # a point on the left hinge axis
+
+# The hinge. A wing folds back until its outer skin meets the outer skin of the fixed back half,
+# so the pivot has to sit close under the surface: seen from a pivot h under both skins, skin of
+# radius r is free to swing through 2 * FLANK_RIDGE + 2 * acos(h / r). Everything nearer than
+# HINGE_R is a round barrel that turns in a cove, and h is chosen so the skin at the barrel
+# clears WING_MAX with SWING_MARGIN to spare. The barrel shows as a rounded ridge on the flank.
+WING_MAX = 125.0  # full swing of each front shell about its flank
+SWING_MARGIN = 5.0
+FLANK_RIDGE = 18.0  # each flank facet leans back this far from the plane touching the V edge
+HINGE_R = 2.0  # barrel radius: a 2 mm steel pin with 1 mm of PLA round it
+HINGE_GAP = 0.3  # between the barrel and its cove
+HINGE_DEPTH = HINGE_R * math.cos(math.radians((WING_MAX + SWING_MARGIN) / 2 - FLANK_RIDGE))
+HINGE_P = E_LEFT + HINGE_DEPTH / math.cos(math.radians(FLANK_RIDGE)) * V_IN  # on the left axis
+BARREL_TOP = V_TANGENT - Z_SEAT / V_DIR[2] - 6.0  # barrel length up the flank from the pedestal
+KNUCKLE_TOP = BARREL_TOP + 15.0  # fixed knuckle above it; the axis leaves the lobe before its end
 RIDGE_Z = E_LEFT[2] + V_DIR[0] * E_LEFT[0] / V_DIR[2]  # where both pedestal roof planes meet
 FLOOR_Z = 31.0  # top of the room floor
 
@@ -226,7 +239,13 @@ def planes_poklad(seed):
 def _finish(normals, depths):
     a = np.array([n / np.linalg.norm(n) for n in normals])
     d = (CLOUD @ a.T).max(0) - np.array(depths)
-    return np.vstack([a, [1.0, 0.0, 0.0]]), np.append(d, 0.0)  # last plane is the mid-plane x = 0
+    # the straight ridge that carries the hinge must survive from the tip to past the tangent point
+    ends = np.array([V_DIR * 4.0, V_DIR * (V_TANGENT + 1.5)])
+    d = np.maximum(d, (ends @ a.T).max(0) + 0.6)
+    g = math.radians(FLANK_RIDGE)
+    flanks = [-math.cos(g) * V_IN + math.sin(g) * np.array([0.0, sy, 0.0]) for sy in (-1, 1)]
+    a = np.vstack([a, flanks, [1.0, 0.0, 0.0]])  # last plane is the mid-plane x = 0
+    return a, np.concatenate([d, [0.0, 0.0], [0.0]])
 
 
 def inset(planes, t):
@@ -417,48 +436,93 @@ def pedestal(roof=True):
 
 
 # ---------------------------------------------------------------- opening A: wings
-WING_MAX = 125.0  # full swing of each front shell about its V edge
-
-
 def wing_angle(turn):
     """Shell angle for a base turn of 0..180 degrees: an eccentric gives a slow start and end."""
     half = math.radians(WING_MAX / 2)
     return math.degrees(half - math.asin(math.sin(half) * math.cos(math.radians(turn))))
 
 
-def wings(look, turn=0.0):
-    """Two front shells hinged along the V edges; the back half and the coal bed are fixed."""
+def hinge_tools():
+    """Solids about the left hinge axis, in world coordinates; mirror them for the right side.
+
+    Local frame: z up the axis from the pedestal, x into the heart, y to the back.
+    """
+    at = Plane(origin=tuple(HINGE_P), x_dir=tuple(V_IN), z_dir=tuple(V_DIR)).location
+
+    def rod(radius, t0, t1):
+        return at * Pos(0, 0, (t0 + t1) / 2) * Cylinder(radius, t1 - t0)
+
+    def block(x, y, t0, t1):
+        return at * Pos(sum(x) / 2, sum(y) / 2, (t0 + t1) / 2) * Box(x[1] - x[0], y[1] - y[0], t1 - t0)
+
+    r, gap = HINGE_R, HINGE_GAP
+    return {
+        "barrel": rod(r, 0.4, BARREL_TOP),  # turns with the wing
+        # the wing's wall runs back past the seam plane as a heel, so the barrel has a root
+        "heel": block((0, 5), (-SEAM, r), 0.4, BARREL_TOP),
+        "cove": rod(r + gap, -2, BARREL_TOP + gap / 2),  # cut from the fixed back
+        "cove_heel": block((-gap, 5.5), (-1, r + gap), -2, BARREL_TOP + gap / 2),
+        "knuckle": rod(r, BARREL_TOP + gap, KNUCKLE_TOP),  # fixed, holds the top of the pin
+        "knuckle_room": rod(r + gap, BARREL_TOP + gap / 2, KNUCKLE_TOP + 1),  # cut from the wing
+        "swing": rod(r + 2.4, -4, KNUCKLE_TOP + 1),  # nothing fixed inside the heart comes this near
+    }
+
+
+def wing_parts(look):
+    """The wings design, sorted by what moves.
+
+    Returns {"left": [(material, solid)], "right": [...], "fixed": [...]} with the wings closed,
+    and the two hinge axes {"left": Axis, "right": Axis}. A wing opens by turning about its axis
+    by -angle on the left and +angle on the right.
+    """
     h = heart(look)
-    phi = wing_angle(turn)
-    parts = base_common() + [("coal", pedestal())]
+    tools = hinge_tools()
     lining = [s for u, c in zip(h["under"], h["cavity"]) for s in solids_of(u - c)]
-    front = big_box(y=(-300, -SEAM))
-    back = big_box(y=(SEAM, 300))
-    for sx in (-1, 1):
+    front, back = big_box(y=(-300, -SEAM)), big_box(y=(-SEAM, 300))
+    rear = big_box(y=(SEAM, 300))
+    under = Compound(h["under"])
+    parts = {"left": [], "right": [], "fixed": base_common() + [("coal", pedestal())]}
+    axes = {}
+    for name, sx in (("left", -1), ("right", 1)):
         mirror = np.array([-sx, 1, 1])  # constants describe the left side
+        tool = {k: (v if sx < 0 else v.mirror(Plane.YZ)) for k, v in tools.items()}
         side = big_box(x=(-300, -SEAM)) if sx < 0 else big_box(x=(SEAM, 300))
         up = above_plane(E_LEFT * mirror, V_DIR * mirror, 0.4)
-        axis = Axis(tuple(HINGE_P * mirror), tuple(V_DIR * mirror))
-        barrel_at = Plane(origin=tuple(HINGE_P * mirror), z_dir=tuple(V_DIR * mirror)).location
-        barrel = barrel_at * Pos(0, 0, 30) * Cylinder(HINGE_INSET + 0.25, 64)
-        cove = barrel_at * Pos(0, 0, 30) * Cylinder(HINGE_INSET + 0.65, 66)
-        under = Compound(h["under"])
+        axes[name] = Axis(tuple(HINGE_P * mirror), tuple(V_DIR * mirror))
         for material, solids in [(m, [s]) for m, s in h["skin"]] + [("lining", lining)]:
             body = clip(clip(solids, side), up)
             if material != "lining":
                 body = cut(body, under)
-            door = clip(body, front) + clip(clip(body, back), barrel)
-            fixed = cut(clip(body, back), cove)
-            sense = sx  # both shells swing forwards and outwards
-            parts += [(material, s.rotate(axis, sense * phi)) for s in door]
-            parts += [(material, s) for s in fixed]
+            behind = clip(body, back)
+            door = cut(clip(body, front), tool["knuckle_room"])
+            door += clip(behind, tool["barrel"]) + clip(behind, tool["heel"])
+            fixed = cut(cut(clip(body, rear), tool["cove"]), tool["cove_heel"])
+            parts[name] += [(material, s) for s in door]
+            parts["fixed"] += [(material, s) for s in fixed]
+        # the part of the barrel that stands proud of the skin, and the fixed knuckle above it
+        parts[name] += [("coal", s) for s in clip([tool["barrel"]], up)]
+        parts["fixed"] += [("coal", s) for s in solids_of(tool["knuckle"])]
+    swing = [tools["swing"], tools["swing"].mirror(Plane.YZ)]
     # the room stands on a fixed coal block that fills the heart below the floor
     cellar = big_box(z=(RIDGE_Z - 6, FLOOR_Z - 1.5))
     for sx in (-1, 1):
         up = above_plane(E_LEFT * [-sx, 1, 1], V_DIR * [-sx, 1, 1], -0.2)
         side = big_box(x=(-300, 0)) if sx < 0 else big_box(x=(0, 300))
-        parts += [("coal_matte", s) for s in clip(clip(clip(h["cavity"], cellar), up), side)]
-    return parts + room(h["cavity"])
+        block = clip(clip(clip(h["cavity"], cellar), up), side)
+        parts["fixed"] += [("coal_matte", s) for s in cut(cut(block, swing[0]), swing[1])]
+    for material, solid in room(h["cavity"]):
+        parts["fixed"] += [(material, s) for s in cut(cut([solid], swing[0]), swing[1])]
+    return parts, axes
+
+
+def wings(look, turn=0.0):
+    """Two front shells hinged on the flanks; the back half, the room and the coal bed are fixed."""
+    parts, axes = wing_parts(look)
+    phi = wing_angle(turn)
+    out = list(parts["fixed"])
+    for name, sense in (("left", -1), ("right", 1)):
+        out += [(material, s.rotate(axes[name], sense * phi)) for material, s in parts[name]]
+    return out
 
 
 # ---------------------------------------------------------------- opening B: seam lift

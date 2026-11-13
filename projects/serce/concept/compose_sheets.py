@@ -107,7 +107,7 @@ if __name__ == "__main__":
             [
                 (on_paper("wings_counter", square, 520), "A  Skrzydła", "the whole room is in view"),
                 (on_paper("lift_counter", square, 520), "B  Pokład", "the raised top hides the room"),
-                (on_paper("bloom_counter", square, 520), "C  Rozkwit", "open all round, 190 mm wide"),
+                (on_paper("bloom_counter", square, 520), "C  Rozkwit", "open all round, 137 mm wide"),
             ]
         ],
         OUT / "counter_view_comparison.png",

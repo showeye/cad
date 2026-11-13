@@ -126,7 +126,7 @@ def turn_arrow(ax, y=None):
 def diagram_wings():
     fig, axes = plt.subplots(2, 2, figsize=(13, 10.4), facecolor=PAPER)
     fig.suptitle(
-        "A  Skrzydła (wings): two front shells hinged along the V edges, driven by a cam and a slider in the base",
+        "A  Skrzydła (wings): two front shells hinged on the flanks, driven by a cam and a slider in the base",
         fontsize=12.5,
         color=INK,
         x=0.02,
@@ -147,16 +147,16 @@ def diagram_wings():
     outline = heart_outline()
     ax.add_patch(Polygon(outline, closed=True, fc="none", ec=COAL, lw=1.8))
     ax.plot([0, 0], [hc.RIDGE_Z, 70], color=COAL, lw=0.9, ls=(0, (4, 3)))
-    label(ax, (-27, 34), "steel hinge pins inside the V edges", (-93, 16))
+    label(ax, (-27, 34), "steel hinge pin in a\nrounded ridge on each flank", (-93, 14))
     label(ax, (0, 55), "centre seam: one cleat crack among decoys", (22, 88))
-    label(ax, (20, 10), "fixed coal bed: its two main facets are square\nto the hinges, so the shells sweep 0.4 mm above\nthem and no gap ever closes on a finger", (34, -8))
+    label(ax, (20, 10), "fixed coal bed: its two main facets\nare square to the hinges, so the shells\nsweep 0.4 mm above them and no gap\never closes on a finger", (44, -8))
     arrow(ax, (-12, 74), (-52, 30), rad=0.35)
     arrow(ax, (12, 74), (52, 30), rad=-0.35)
     turn_arrow(ax)
 
     # side section
     ax = axes[0, 1]
-    frame(ax, "Section through the middle, seen from the side (front is left)", (-62, 78), (-22, 92))
+    frame(ax, "Section through the middle, seen from the side (front is left)", (-62, 96), (-22, 92))
     prof = side_profile()
     ax.add_patch(Polygon(prof, closed=True, fc="#EFE9DC", ec=COAL, lw=1.8))
     inner = np.c_[prof[:, 0] * 0.86, hc.Z0 + (prof[:, 1] - hc.Z0) * 0.92]
@@ -200,19 +200,19 @@ def diagram_wings():
     ax.add_patch(Rectangle((slide - 3.3, slider_z + 2.6), 6.6, 7.4, fc=MOVE, ec=INK, lw=0.5, alpha=0.85))  # fork
     ax.add_patch(Circle((slide, slider_z + 7.2), 2.0, fc=STEEL, ec=INK, lw=0.5))  # tail ball
     arrow(ax, (-22, slider_z + 13), (-3, slider_z + 13), "19.5 mm", colour=MOVE, offset=(0, 3.5))
-    label(ax, (slide + GROOVE_R, web_z + 3), "steel follower pin in a circular\ngroove, 9.8 mm off-centre", (40, 30))
-    label(ax, (slide + 12, slider_z + 1.3), "slider (front to back)", (40, 21))
-    label(ax, (slide, slider_z + 7.2), "fork and the tails of both shells", (40, 13))
-    label(ax, (20, FOOT_Z + 1.8), "steel ballast, 150 g", (40, -14))
-    label(ax, (1, 5), "fixed hub with M4 tie screw", (40, 5))
-    label(ax, (RING_R - 1.6, RING_TOP - 6), "turn ring", (40, -4))
+    label(ax, (1, 5), "fixed hub with M4 tie screw", (44, 30))
+    label(ax, (slide, slider_z + 7.2), "fork and the levers of both shells", (44, 22))
+    label(ax, (slide + 12, slider_z + 1.3), "slider (front to back)", (44, 14))
+    label(ax, (RING_R - 1.6, RING_TOP - 6), "turn ring", (44, 6))
+    label(ax, (slide + GROOVE_R, web_z + 3), "steel follower pin in a circular\ngroove, 9.8 mm off-centre", (44, -4))
+    label(ax, (20, FOOT_Z + 1.8), "steel ballast, 150 g", (44, -15))
     label(ax, (13.8, 60), "room: back wall, floor, furniture\n(one four-colour part)", (26, 64))
     label(ax, (-19, 52), "front shells:\ncoal outside,\nhoney lining", (-60, 70))
     label(ax, (20, 46), "fixed back half", (30, 50))
 
     # top view of the drive
     ax = axes[1, 0]
-    frame(ax, "The drive from above: closed (grey) and open (blue)", (-48, 62), (-46, 46))
+    frame(ax, "The drive from above: closed (grey) and open (blue)", (-50, 112), (-58, 46))
     ax.add_patch(Circle((0, 0), RING_R, fc="none", ec=COAL, lw=5))
     ax.add_patch(Circle((0, 0), 3.4, fc="#4A4A52", ec=INK, lw=0.6))
     for turn, colour, alpha in ((0, "#8A8A90", 0.9), (180, MOVE, 0.95)):
@@ -227,12 +227,12 @@ def diagram_wings():
             ax.add_patch(Circle((x, slide), 2.0, fc=STEEL, ec=INK, lw=0.5, alpha=alpha))
         ax.plot([-13, -13, 13, 13], [slide + 3.3, y_f, y_f, slide + 3.3], color=colour, lw=1.6, alpha=alpha)
     ax.text(0, -30, "front", fontsize=8.5, color=INK, ha="center")
-    arrow(ax, (20, -ECC), (20, ECC), "slider\n19.5 mm", colour=MOVE, ha="left", offset=(3, 0))
+    arrow(ax, (46, -ECC), (46, ECC), "slider\n19.5 mm", colour=MOVE, ha="left", offset=(3, 0))
     arrow(ax, (-29, -29), (29, -29), rad=0.55)
-    ax.text(0, -44, "half a turn opens, the next half closes; either direction; no end stops", fontsize=8.5, color=MOVE, ha="center")
-    label(ax, (0, 2 * ECC + GROOVE_R - ECC), "follower pin (on the slider)", (30, 40))
-    label(ax, (13, ECC), "fork: holds the tail of\neach shell front to back,\nfree in the other directions", (30, 22))
-    label(ax, (GROOVE_R * 0.7, -ECC - GROOVE_R * 0.7), "cam groove in the ring", (30, -34))
+    ax.text(-46, -55, "half a turn opens, the next half closes; either direction; no end stops", fontsize=8.5, color=MOVE, ha="left")
+    label(ax, (0, 2 * ECC + GROOVE_R - ECC), "follower pin (on the slider)", (46, 40))
+    label(ax, (13, ECC), "fork: holds the lever of\neach shell front to back,\nfree in the other directions", (46, 26))
+    label(ax, (GROOVE_R * 0.7, -ECC - GROOVE_R * 0.7), "cam groove in the ring", (46, -30))
 
     # motion law
     ax = axes[1, 1]
@@ -244,9 +244,10 @@ def diagram_wings():
     gap = np.array([2 * abs(rotate(corner, hc.HINGE_P, hc.V_DIR, -a)[0, 0]) for a in swing])
     ax.plot(turn, swing, color=COAL, lw=2.2, label="shell angle (degrees)")
     ax.plot(turn, gap, color=TILE, lw=2.2, label="gap at the cleft (mm)")
-    for x, text in ((12, "first light:\na hairline"), (60, "bud"), (180, "fully open:\nself-locked"), (348, "closed:\nself-locked")):
-        ax.axvline(x if x not in (12, 348) else (0 if x == 12 else 360), color=STEEL, lw=0.6, ls=":")
-        ax.text(x, 136, text, fontsize=8, color=INK, ha="center", va="bottom")
+    marks = ((15, 32, "first light:\na hairline"), (60, 68, "bud"), (180, 180, "fully open:\nself-locked"), (360, 344, "closed:\nself-locked"))
+    for line_x, text_x, text in marks:
+        ax.axvline(line_x, color=STEEL, lw=0.6, ls=":")
+        ax.text(text_x, 136, text, fontsize=8, color=INK, ha="center", va="bottom")
     ax.set_xlim(0, 360)
     ax.set_ylim(0, 150)
     ax.set_xticks(range(0, 361, 45))
@@ -285,7 +286,7 @@ def diagram_lift():
     top = np.vstack([[[-x_split, split]], top, [[x_split, split]]])
 
     ax = axes[0]
-    frame(ax, "Front: closed (outline) and open (about 1 1/4 turns)", (-70, 70), (-22, 122))
+    frame(ax, "Front: closed (outline) and open (about 1 1/4 turns)", (-124, 124), (-22, 122))
     base_front(ax, tent=False)
     ax.add_patch(Polygon(low, closed=True, fc="#33333A", ec=COAL, lw=1.6))
     ax.add_patch(Polygon(top, closed=True, fc="none", ec=COAL, lw=1.2, ls=(0, (4, 3))))
@@ -295,10 +296,10 @@ def diagram_lift():
     ax.add_patch(Rectangle((-14, split), 8, 9.5, fc=TILE, ec=INK, lw=0.5))
     ax.add_patch(Rectangle((5, split), 9.5, 22, fc=BONE, ec=INK, lw=0.5))
     ax.add_patch(Rectangle((-4, split + 4), 8, 0.9, fc=BONE, ec=INK, lw=0.5))
-    arrow(ax, (50, split + 6), (50, split + travel + 6), "30 mm", offset=(9, 0))
-    label(ax, (-20, split + 15), "room: a 41 x 22 x 30 mm prism,\nso the shell can pass over it", (-68, 108))
-    label(ax, (-25, split), "the only seam: a horizontal bed,\nflat face on flat face", (-68, 12))
-    label(ax, (30, split + travel + 12), "from above, the raised\ntop hides the room", (22, 114))
+    arrow(ax, (50, split + 2), (50, split + travel + 2), "30 mm", offset=(10, 0))
+    label(ax, (-20, split + 15), "room: a 41 x 22 x 30 mm prism,\nso the shell can pass over it", (-122, 52))
+    label(ax, (-25, split), "the only seam: a horizontal bed,\nflat face on flat face", (-122, 22))
+    label(ax, (30, split + travel + 12), "from above, the raised\ntop hides the room", (56, 100))
     turn_arrow(ax)
 
     ax = axes[1]
@@ -349,7 +350,7 @@ def diagram_bloom():
     rim = np.vstack([[[0.0, 0.0, split]], [[-split * -hc.V_DIR[0] / hc.V_DIR[2] * -1, 0, split]], rim])
 
     ax = axes[0]
-    frame(ax, "Front: closed (outline) and open (about 2 turns)", (-112, 112), (-22, 96))
+    frame(ax, "Front: closed (outline) and open (about 2 turns): the room rises 12 mm", (-112, 112), (-22, 96))
     base_front(ax, tent=False)
     for sx in (-1, 1):
         out = np.array([sx * 0.78, -0.62, 0.0])
@@ -368,8 +369,8 @@ def diagram_bloom():
     ax.add_patch(Rectangle((-6, hc.FLOOR_Z - 12 + rise), 12, 12, fc="#4A4A52", ec=INK, lw=0.5))
     arrow(ax, (-30, 72), (-78, 44), rad=0.3)
     arrow(ax, (30, 72), (78, 44), rad=-0.3)
-    arrow(ax, (0, 44), (0, 60), "12 mm")
-    label(ax, (-70, 26), "open footprint about 190 mm", (-110, 86))
+    arrow(ax, (0, 46), (0, 58))
+    label(ax, (-70, 26), "open: about 137 mm wide\nand 98 mm deep", (-110, 84))
     label(ax, (40, 14), "eight seams: over both lobes,\ndown front and back, round the waist", (36, 90))
     turn_arrow(ax)
 
