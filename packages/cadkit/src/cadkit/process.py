@@ -15,3 +15,6 @@ class Process(Params):
 
 
 FDM = Process()
+
+# Snapmaker U1: FDM toolchanger, four toolheads, 0.4 mm nozzle (maker's specification sheet).
+U1 = Process(name="Snapmaker U1, FDM, 0.4 mm nozzle, 4 colours", build_volume=(270, 270, 270))

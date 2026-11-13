@@ -4,8 +4,16 @@ import itertools
 import math
 
 import pytest
-from cadkit.features.mechanical import bar_between, cord_loop, hex_prism, link, spoked_wheel
-from cadkit.features.motion import Belt, slider_crank
+from build123d import Axis, Cylinder, Pos
+from cadkit.features.mechanical import (
+    bar_between,
+    cam_groove,
+    cord_loop,
+    hex_prism,
+    link,
+    spoked_wheel,
+)
+from cadkit.features.motion import Belt, cam_pressure_angle, cam_rate, slider_crank, smooth_step
 from cadkit.features.text import engraving
 from cadkit.process import FDM
 from cadkit.validate import validate
@@ -74,3 +82,37 @@ def test_engraving_uses_downward_tool_convention():
     assert tool.is_valid
     assert tool.bounding_box().max.Z == pytest.approx(0, abs=1e-6)
     assert tool.bounding_box().min.Z == pytest.approx(-0.8)
+
+
+def _harmonic(angle):
+    return 20 - 8 * math.cos(math.radians(angle))
+
+
+def test_cam_profile_helpers():
+    assert smooth_step(-1) == 0 and smooth_step(0.5) == 0.5 and smooth_step(2) == 1
+    assert all(smooth_step(a / 50) < smooth_step((a + 1) / 50) for a in range(50))
+    for angle in (0, 37, 90, 200):
+        assert cam_rate(_harmonic, angle) == pytest.approx(
+            8 * math.sin(math.radians(angle)), abs=1e-6
+        )
+    assert cam_pressure_angle(_harmonic, 0) == pytest.approx(0, abs=1e-6)
+    assert cam_pressure_angle(_harmonic, 90) == pytest.approx(math.degrees(math.atan2(8, 20)))
+
+
+def test_cam_groove_fits_its_follower_at_every_angle():
+    tool = cam_groove(_harmonic, width=3.3, depth=2.4)
+    box = tool.bounding_box()
+    assert box.min.Z == pytest.approx(-2.4) and 0 < box.max.Z <= 0.25  # at z=0, pointing -Z
+    disc = Pos(0, 0, -2) * Cylinder(32, 4) - tool
+    assert disc.is_valid and len(disc.solids()) == 1
+    for turn in range(0, 360, 15):
+        # a pin on the +Y line at the profile radius, with the cam turned counter-clockwise
+        pin = Pos(0, _harmonic(turn), -1.2) * Cylinder(1.5, 2.2)
+        common = disc.rotate(Axis.Z, turn) & pin
+        assert common is None or common.volume < 1e-6, turn
+        loose = Pos(0, _harmonic(turn) + 1.2, -1.2) * Cylinder(1.5, 2.2)
+        assert (disc.rotate(Axis.Z, turn) & loose).volume > 0.1, turn
+    with pytest.raises(ValueError):
+        cam_groove(lambda a: 1.0, width=3, depth=2)
+    with pytest.raises(ValueError):
+        cam_groove(_harmonic, width=0, depth=2)

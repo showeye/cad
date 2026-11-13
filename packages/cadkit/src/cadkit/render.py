@@ -1,4 +1,19 @@
-"""Shared offscreen Blender rendering and animated CAD presentation packaging."""
+"""Shared offscreen Blender rendering and animated CAD presentation packaging.
+
+A product module may define `presentation`: a dictionary, or a function of the variant's
+parameters that returns one. Every key is optional:
+
+- "sheet": {"title", "subtitle", "caption", "footer"}: text of the review sheet; "subtitle"
+  may use {name} and {version};
+- "views": {name: view}: the stills, in order. A view is either fixed, {"location", "target",
+  "scale"} in metres, or fitted to what it shows, {"azimuth", "elevation"} in degrees with
+  optional "margin", "fit" (name prefixes to frame) or "box" (corners in mm). Any view may add
+  "size" (pixels), "frame" (index of an animation pose to show) and "hide" (name prefixes);
+- "animation": {"view", "size", "samples", "hide", "frame_ms", "loop"}: the motion frames;
+- "materials": {name prefix: {"roughness", "coat", "colour"}}; "lights", "light_target",
+  "world", "world_strength", "samples".
+Without it the scene is the neutral studio the first product was rendered in.
+"""
 
 import hashlib
 import json
@@ -20,11 +35,21 @@ def _font(size):
     return ImageFont.load_default(size=size)
 
 
+def presentation_of(module, params) -> dict:
+    """The product's presentation settings for one variant; empty if it defines none."""
+    spec = getattr(module, "presentation", None)
+    if callable(spec):
+        spec = spec(params)
+    return dict(spec or {})
+
+
 def prepare_presentation(model, variant, out, module, animate=False):
     """Stage CAD tessellation and optional rigid poses for an isolated Blender process."""
     out = out.resolve()
-    parts = parts_of(model.build(model.variants[variant]))
+    params = model.variants[variant]
+    parts = parts_of(model.build(params))
     payload = {"name": model.name, "version": model.version, "parts": {}, "poses": []}
+    payload["presentation"] = presentation_of(module, params)
     for name, shape in parts.items():
         mesh = mesh_of(shape, model.process.mesh_tolerance)
         payload["parts"][name] = {
@@ -32,10 +57,12 @@ def prepare_presentation(model, variant, out, module, animate=False):
             "faces": mesh.faces.tolist(),
             "colour": list(shape.color)[:3] if shape.color else [0.3, 0.3, 0.3],
         }
-    if animate:
+    posed_views = any("frame" in v for v in payload["presentation"].get("views", {}).values())
+    payload["animate"] = bool(animate)
+    if animate or posed_views:
         if not hasattr(module, "_render_poses"):
             raise ValueError("Model does not provide rigid presentation poses")
-        payload["poses"] = module._render_poses(model.variants[variant])
+        payload["poses"] = module._render_poses(params)
     data = out / "presentation.json"
     data.write_text(json.dumps(payload, separators=(",", ":")))
     return data
@@ -56,26 +83,31 @@ def render_model(model, variant, out, module, animate=False):
         str(data),
     ]
     subprocess.run(command, check=True)
-    finish_presentation(out, model.name, model.version, animate)
+    spec = presentation_of(module, model.variants[variant])
+    finish_presentation(out, model.name, model.version, animate, spec)
 
 
-def finish_presentation(out, name, version, animate=True):
+def finish_presentation(out, name, version, animate=True, spec=None):
     """Package rendered frames, contact sheet and artifact hashes after Blender exits."""
     out = Path(out)
+    spec = spec or {}
+    film = spec.get("animation", {})
     frames = sorted((out / "frames").glob("*.png"))
+    if film.get("loop") and len(frames) > 1:
+        frames = frames[:-1]  # the last pose repeats the first
     if animate and frames:
         images = [Image.open(f).convert("RGB") for f in frames]
         images[0].save(
             out / "motion.gif",
             save_all=True,
             append_images=images[1:],
-            duration=100,
+            duration=film.get("frame_ms", 100),
             loop=0,
             optimize=False,
         )
         for image in images:
             image.close()
-    compose_sheet(out, name, version)
+    compose_sheet(out, name, version, spec.get("sheet"))
     manifest_path = out / "manifest.json"
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text())
@@ -86,14 +118,20 @@ def finish_presentation(out, name, version, animate=True):
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
 
-def compose_sheet(out: Path, name: str, version: str):
-    """A neutral labelled review sheet: hero, reverse and overhead CAD renders."""
+def compose_sheet(out: Path, name: str, version: str, text: dict | None = None):
+    """A neutral labelled review sheet: hero, reverse and overhead CAD renders.
+
+    `text` gives the product's "title", "subtitle", "caption" and "footer"; the subtitle may
+    use {name} and {version}.
+    """
+    text = text or {}
     sheet = Image.new("RGB", (1800, 1500), "#F2EEE5")
     draw = ImageDraw.Draw(sheet)
-    draw.text((65, 35), "NA SZYCHCIE OD 1915", font=_font(43), fill="#252C2C")
+    draw.text((65, 35), text.get("title", name.upper()), font=_font(43), fill="#252C2C")
+    subtitle = text.get("subtitle", "{name}  /  {version}  /  Engineering concept")
     draw.text(
         (66, 95),
-        f"{name.upper()}  /  Full form  /  {version}  /  Engineering concept",
+        subtitle.format(name=name.upper(), version=version),
         font=_font(21),
         fill="#675D50",
     )
@@ -110,15 +148,10 @@ def compose_sheet(out: Path, name: str, version: str):
             x = box[0] + (box[2] - box[0] - source.width) // 2
             y = box[1] + (box[3] - box[1] - source.height) // 2
             sheet.paste(source, (x, y))
-    draw.text(
-        (70, 1010),
-        "Cutaway engine house / exposed twin slider-cranks / continuous cord",
-        font=_font(23),
-        fill="#252C2C",
-    )
+    draw.text((70, 1010), text.get("caption", ""), font=_font(23), fill="#252C2C")
     draw.text(
         (70, 1415),
-        "180 x 90 x 120 mm  |  Iron / ochre / brick / cream  |  Physical prototype required",
+        text.get("footer", "Physical prototype required"),
         font=_font(23),
         fill="#675D50",
     )

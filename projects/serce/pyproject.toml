@@ -1,0 +1,16 @@
+[project]
+name = "serce"
+version = "0.2.0"
+description = "Serce na węgiel: a kinetic coal heart that opens to a Silesian kitchen"
+requires-python = ">=3.12"
+dependencies = ["cadkit"]
+
+[project.entry-points."cadkit.models"]
+serce = "serce.model:model"
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

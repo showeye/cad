@@ -1,22 +1,25 @@
 """Reusable machining-style primitives, centred on their axes, in mm."""
 
 import math
+from collections.abc import Callable
 
 from build123d import (
     Box,
     Circle,
     Cylinder,
     Edge,
+    Face,
     Plane,
     Pos,
     RegularPolygon,
     Rot,
+    Spline,
     Wire,
     extrude,
     sweep,
 )
 
-from cadkit.features.motion import Belt
+from cadkit.features.motion import Belt, cam_rate
 
 
 def cord_loop(belt: Belt, radius: float = 0.55, y: float = 0):
@@ -40,6 +43,44 @@ def cord_loop(belt: Belt, radius: float = 0.55, y: float = 0):
     ]
     plane = Plane(origin=a, z_dir=(-math.sin(high), 0, math.cos(high)))
     return sweep(plane * Circle(radius), path=Wire(edges), is_frenet=True)
+
+
+def cam_groove(
+    profile: Callable[[float], float],
+    width: float,
+    depth: float,
+    overshoot: float = 0.2,
+    steps: int = 144,
+):
+    """Cutting tool for a closed cam groove about Z: sits at z=0, points -Z.
+
+    `profile(angle)` is the radius of the groove's centre line under a follower that is held on
+    the +Y radial line, after the cam has turned counter-clockwise by `angle` degrees. It must
+    be periodic over 360 degrees and smooth. Both walls are true offsets of the centre line by
+    width / 2, so a round follower pin of that width fits at every angle.
+    """
+    if min(width, depth) <= 0 or steps < 24:
+        raise ValueError("Require positive width and depth and at least 24 steps")
+    radii = [profile(360 * k / steps) for k in range(steps)]
+    if min(radii) <= width / 2:
+        raise ValueError("Groove would cross the axis")
+    walls = []
+    for side in (1, -1):
+        points = []
+        for k in range(steps):
+            turn = 360 * k / steps
+            psi = math.radians(90 - turn)  # the point that the turn brings under the follower
+            radius = radii[k]
+            slope = -cam_rate(profile, turn)  # d radius / d psi
+            x, y = radius * math.cos(psi), radius * math.sin(psi)
+            tx = slope * math.cos(psi) - radius * math.sin(psi)
+            ty = slope * math.sin(psi) + radius * math.cos(psi)
+            norm = math.hypot(tx, ty)
+            # the outward normal of a counter-clockwise curve is (ty, -tx)
+            points.append((x + side * width / 2 * ty / norm, y - side * width / 2 * tx / norm))
+        walls.append(Wire([Spline(*points, periodic=True)]))
+    ring = Face(walls[0], [walls[1]])
+    return Pos(0, 0, overshoot) * extrude(ring, amount=depth + overshoot, dir=(0, 0, -1))
 
 
 def hex_prism(radius: float, length: float):

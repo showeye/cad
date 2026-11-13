@@ -1,6 +1,7 @@
-"""Planar slider-cranks and open-belt geometry; mm and degrees throughout."""
+"""Planar slider-cranks, radial cams and open-belt geometry; mm and degrees throughout."""
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 
@@ -11,6 +12,22 @@ def slider_crank(radius: float, rod: float, angle: float) -> tuple[float, float,
     t = math.radians(angle)
     x, z = radius * math.cos(t), radius * math.sin(t)
     return x, z, x - math.sqrt(rod * rod - z * z)
+
+
+def smooth_step(x: float) -> float:
+    """0 to 1 over 0..1 with zero slope at both ends (cubic); clamped outside."""
+    x = min(1.0, max(0.0, x))
+    return x * x * (3 - 2 * x)
+
+
+def cam_rate(profile: Callable[[float], float], angle: float, step: float = 1e-3) -> float:
+    """Follower travel per radian of cam turn at `angle` degrees, for a radial follower."""
+    return (profile(angle + step) - profile(angle - step)) / math.radians(2 * step)
+
+
+def cam_pressure_angle(profile: Callable[[float], float], angle: float) -> float:
+    """Signed angle in degrees between the groove normal at a radial follower and its travel."""
+    return math.degrees(math.atan2(cam_rate(profile, angle), profile(angle)))
 
 
 @dataclass(frozen=True)

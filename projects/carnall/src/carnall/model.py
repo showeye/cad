@@ -394,6 +394,18 @@ def _render_poses(params, steps=24):
     return frames
 
 
+# Text of the review sheet (cadkit.render); the views and the scene are cadkit's defaults.
+presentation = {
+    "sheet": {
+        "title": "NA SZYCHCIE OD 1915",
+        "subtitle": "{name}  /  Full form  /  {version}  /  Engineering concept",
+        "caption": "Cutaway engine house / exposed twin slider-cranks / continuous cord",
+        "footer": (
+            "180 x 90 x 120 mm  |  Iron / ochre / brick / cream  |  Physical prototype required"
+        ),
+    }
+}
+
 variants = {"full": Params()}
 process = FDM
 version = "0.1.0"
