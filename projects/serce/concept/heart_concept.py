@@ -134,7 +134,9 @@ def big_box(x=(-300, 300), y=(-300, 300), z=(-300, 300)):
 
 def above_plane(point, normal, offset=0.0):
     """Big block on the +normal side of a plane (moved along the normal by `offset`)."""
-    plane = Plane(origin=tuple(np.asarray(point) + offset * np.asarray(normal)), z_dir=tuple(normal))
+    plane = Plane(
+        origin=tuple(np.asarray(point) + offset * np.asarray(normal)), z_dir=tuple(normal)
+    )
     return plane.location * Pos(0, 0, 300) * Box(600, 600, 600)
 
 
@@ -427,7 +429,9 @@ def pedestal(roof=True):
         slope = math.radians(42)
         for k in range(10):
             t = 2 * math.pi * (k + 0.5) / 10
-            n = np.array([math.sin(slope) * math.cos(t), math.sin(slope) * math.sin(t), math.cos(slope)])
+            n = np.array(
+                [math.sin(slope) * math.cos(t), math.sin(slope) * math.sin(t), math.cos(slope)]
+            )
             a += [tuple(n)]
             d += [float(n @ np.array([16 * math.cos(t), 13 * math.sin(t), Z_SEAT]))]
         a += [(0, 0, 1.0)]
@@ -453,7 +457,9 @@ def hinge_tools():
         return at * Pos(0, 0, (t0 + t1) / 2) * Cylinder(radius, t1 - t0)
 
     def block(x, y, t0, t1):
-        return at * Pos(sum(x) / 2, sum(y) / 2, (t0 + t1) / 2) * Box(x[1] - x[0], y[1] - y[0], t1 - t0)
+        return (
+            at * Pos(sum(x) / 2, sum(y) / 2, (t0 + t1) / 2) * Box(x[1] - x[0], y[1] - y[0], t1 - t0)
+        )
 
     r, gap = HINGE_R, HINGE_GAP
     return {
@@ -464,7 +470,9 @@ def hinge_tools():
         "cove_heel": block((-gap, 5.5), (-1, r + gap), -2, BARREL_TOP + gap / 2),
         "knuckle": rod(r, BARREL_TOP + gap, KNUCKLE_TOP),  # fixed, holds the top of the pin
         "knuckle_room": rod(r + gap, BARREL_TOP + gap / 2, KNUCKLE_TOP + 1),  # cut from the wing
-        "swing": rod(r + 2.4, -4, KNUCKLE_TOP + 1),  # nothing fixed inside the heart comes this near
+        "swing": rod(
+            r + 2.4, -4, KNUCKLE_TOP + 1
+        ),  # nothing fixed inside the heart comes this near
     }
 
 
@@ -550,8 +558,15 @@ def lift(look, travel=0.0):
         parts += [(material, s) for s in clip(solids_of(small & stage), cavity)]
     floor = big_box((-20.5, 20.5), (-12, 10.5), (LIFT_SPLIT - 0.8, LIFT_SPLIT + 0.2))
     parts += [("tile", s) for s in solids_of(floor & cavity)]
-    parts.append(("coal_matte", up * big_box((-19, 19), (11.4, 13.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT + 3))))
-    parts.append(("honey", up * big_box((-19, 19), (10.6, 11.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT))))
+    parts.append(
+        (
+            "coal_matte",
+            up * big_box((-19, 19), (11.4, 13.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT + 3)),
+        )
+    )
+    parts.append(
+        ("honey", up * big_box((-19, 19), (10.6, 11.4), (LIFT_SPLIT - LIFT_MAX, LIFT_SPLIT)))
+    )
     return parts
 
 
@@ -566,7 +581,9 @@ def bloom(look, amount=0.0):
     under = Compound(h["under"])
     top = big_box(z=(BLOOM_SPLIT + SEAM, 300))
     lining = [s for u, c in zip(h["under"], h["cavity"]) for s in solids_of(u - c)]
-    skins = [(m, cut(clip([s], top), under)) for m, s in h["skin"]] + [("lining", clip(lining, top))]
+    skins = [(m, cut(clip([s], top), under)) for m, s in h["skin"]] + [
+        ("lining", clip(lining, top))
+    ]
     low = big_box(z=(-300, BLOOM_SPLIT - SEAM))
     parts += [(m, s) for m, solid in h["skin"] for s in clip([solid], low)]
     for sx in (-1, 1):
