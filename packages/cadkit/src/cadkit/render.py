@@ -71,10 +71,18 @@ def prepare_presentation(model, variant, out, module, animate=False):
     return data
 
 
+def clear_frames(out) -> None:
+    """Remove the frames of an earlier render: a shorter film would otherwise end with them."""
+    for old in Path(out).glob("frames*/*.png"):
+        old.unlink()
+
+
 def render_model(model, variant, out, module, animate=False):
     """Render exactly the CAD mesh, optionally applying product-provided rigid poses."""
     data = prepare_presentation(model, variant, out, module, animate)
     out = data.parent
+    if animate:
+        clear_frames(out)
     blender = Path("/Applications/Blender.app/Contents/MacOS/Blender")
     command = [
         str(blender) if blender.exists() else "blender",

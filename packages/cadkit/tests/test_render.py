@@ -1,6 +1,6 @@
 """Packaging of rendered frames into films; the Blender process itself is not run here."""
 
-from cadkit.render import finish_presentation
+from cadkit.render import clear_frames, finish_presentation
 from PIL import Image
 
 
@@ -32,3 +32,13 @@ def test_no_film_without_frames_or_when_not_asked(tmp_path):
     _frames(tmp_path / "frames", 3)
     finish_presentation(tmp_path, "thing", "1.0.0", animate=False)
     assert not list(tmp_path.glob("*.gif"))
+
+
+def test_frames_of_an_earlier_render_are_cleared(tmp_path):
+    _frames(tmp_path / "frames", 5)
+    _frames(tmp_path / "frames_bare", 3)
+    still = tmp_path / "hero.png"
+    still.write_bytes(b"kept")
+    clear_frames(tmp_path)
+    assert not list(tmp_path.glob("frames*/*.png"))
+    assert still.read_bytes() == b"kept"  # stills are not frames
