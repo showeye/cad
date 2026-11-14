@@ -47,7 +47,9 @@ The client answered the three decisions of `brief.md`, section 6, on 2026-11-14:
 | Files or printed sets | Not decided yet: every fit is generous and a named parameter |
 
 The client reviewed the first build on 2026-11-14 ("it looks great"). The second build keeps
-its look: the frame, the plates, the train and the pawl are unchanged.
+its look: the frame, the plates, the train and the pawl are unchanged. Told of the second
+build's shorter tick the same day, the client accepted it: "one second tick is fine for now
+- we will see how it works once printed".
 
 ## 3. How it works
 
@@ -492,8 +494,9 @@ From the sixth session, on giving the king margin (section 5 has the figures):
 
 ## 13. Next steps, in order
 
-1. **The client's view of the second build**: the films in `img/`, and the trade in section
-   5 between a tick that is sure and one that is long.
+1. The client's view of the second build is given (section 2): the one-second tick stands
+   until a printed king shows how it works. The set's next piece comes before more work on
+   the king.
 2. **Test prints.** The model has gone as far as it can without a measurement. Smallest
    first, and each one measures a figure the model assumes:
    - the escape wheel with the anchor on two pins in a strip, a thread round the wheel's

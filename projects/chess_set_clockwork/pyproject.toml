@@ -8,6 +8,7 @@ dependencies = ["cadkit"]
 [project.entry-points."cadkit.models"]
 clockwork_knight = "chess_set_clockwork.knight.model:model"
 clockwork_king = "chess_set_clockwork.king.model:model"
+clockwork_pawn = "chess_set_clockwork.pawn.model:model"
 
 [tool.uv.sources]
 cadkit = { workspace = true }

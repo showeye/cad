@@ -3,17 +3,18 @@
 A 3D-printed chess set in the style of skeleton clocks, where each piece holds clockwork parts
 that do something. Everything for this product lives in this folder.
 
-## Status (2026-11-14, sixth session)
+## Status (2026-11-14, seventh session)
 
-**Knight and king are built in CAD (`clockwork_knight` 0.1.0, `clockwork_king` 0.2.0). Nothing
-is printed. The king's second build has the margin against friction that the first one lacked:
-by its run model it ticks from rest with a friction of up to 0.51, where the first build
-stalled from 0.26. It pays with a shorter tick: sixteen beats in about one second instead of
-twenty in about two. The other four pieces are not started.**
+**Knight, king and pawn are built in CAD (`clockwork_knight` 0.1.0, `clockwork_king` 0.2.0,
+`clockwork_pawn` 0.1.0). Nothing is printed. The pawn is new in this session: a ratchet wheel
+that goes on by one tooth with every move and cannot turn back. It works in the model; its
+weak point is that the pawl falls towards the wheel by its own weight only, a tenth of a
+gram. The client has not seen the pawn yet. Rook, bishop and queen are not started.**
 
-Everything is committed: the knight (`eb985d0`), `cadkit`'s escapement (`aae0d45`), the
-king's first build with its run model (`ffc89cc`), and the king's second build, which is
-everything of the sixth session, in the commit after that.
+Committed and pushed: the knight (`eb985d0`), `cadkit`'s escapement (`aae0d45`), the king's
+first build with its run model (`ffc89cc`) and its second build (`b30e687`), `cadkit`'s
+ratchet (`e8d9128`), and the pawn in the commit after that one, which also holds this file
+and the note of the client's answer on the king from the sixth session.
 
 ### The knight
 
@@ -30,88 +31,93 @@ everything of the sixth session, in the commit after that.
 - It ticks after every move. Lifted, a plunger drops 4.0 mm and a pawl clicks under the next
   lobe of a small star. Set down, the king falls 0.9 mm onto the pawl and sinks the last
   3.1 mm under its own weight, which drives a recoil anchor escapement with a pendulum:
-  sixteen beats per move, in 0.8 to 1.4 s depending on friction, and the pendulum swings on
-  for about half a second.
+  sixteen beats per move, in 0.8 to 1.4 s depending on friction.
 - Ten printed parts, six red jewel rings, eight pieces of steel. Base Ø44 mm, 86.7 mm tall,
   38.1 g.
 - 65 tests pass: the snapshot, 14 on the motion and 50 on the run.
-- **By the run model it has margin now.** From a pendulum at rest it ticks with a friction of
-  up to 0.51 lowered onto its pawl and 0.60 dropped onto it. With 0.2, 0.4 and 0.45 it ticks
-  from wherever the pendulum is let go, and with 0.4 also with a loose guide, a tight one,
-  and pallets that stand deeper than drawn. `docs/king/design-notes.md`, section 10.
-- What changed from the first build (section 5): an escape wheel of 20 teeth instead of 25,
-  pallets with flatter ramps that let a tooth go at 3° instead of 4°, a Ø1 wire as the
-  anchor's arbor, a bob of Ø4 × 10 instead of Ø6 × 14, and a pendulum that hangs 1° off the
-  anchor's centre to meet the king's lean. Frame, plates, train, pawl and plunger are as the
-  client saw them.
-- **The model is still all there is.** Every friction value is assumed, and the same model
-  chose the dimensions. What is not as it should be yet (section 12): no test print; the tick
-  is short and may sound like a rattle; the pallets stand only 0.41 mm in the wheel; the
-  pawl falls in by its own weight only; the king leans 3° to the back while it sinks; the
-  anchor's arch is 17 mm deep and looks heavy.
+- By its run model it ticks from rest with a friction of up to 0.51. The client accepted the
+  one-second tick on 2026-11-14 ("one second tick is fine for now - we will see how it works
+  once printed"). The king rests until it is printed: `docs/king/design-notes.md`, sections
+  12 and 13.
+
+### The pawn
+
+- Every move turns its wheel on by one tooth, 22.5°. Lifted, a plunger drops 4.5 mm; the
+  pawl that stands on it rides down over the next tooth and falls under it. Set down, the
+  pawl pushes that tooth up, and the click on top of the wheel is lifted over one tooth and
+  falls behind it. The wheel cannot turn back.
+- Eight printed parts (seven different: the two plates are one part), two red jewel rings,
+  three pieces of steel. Base Ø32 mm, 46.9 mm tall, 15.3 g.
+- 17 tests pass: the snapshot and 16 on the motion, clearances, stops and balance.
+- **Weak point, measured:** the pawl weighs 0.10 g and its centre of mass stands 0.69 mm
+  inside its knuckle when it has to fall under the tooth. Friction in its socket may hold
+  that. If it does, that move does not turn the wheel; nothing jams. A remedy is worked out
+  on paper (a steel roller behind the pawl), not built. `docs/pawn/design-notes.md`, section
+  10, point 2, and section 11.
+- **Decisions the client has not seen** (section 2 of the notes): base Ø32 where the brief
+  estimated 30, a travel of 4.5 mm, a wheel of Ø15 with sixteen teeth, a round arch, a
+  separate head, click and pawl in the plunger's dark colour.
+- **Not met:** the brief asked for a pawn that prints nearly in one piece. This one has
+  eleven items; the knight has twelve.
 
 ### This session
 
-- The king was given margin against friction, with the run model as the judge. The goal was
-  the one the fifth session set: tick with a friction of 0.4 from a pendulum at rest.
-- What the fifth session expected to help most did less than it seemed. Hanging the pendulum
-  in beat owed most of its gain to the kick the king's sudden lean gives the pendulum; from
-  true rest it gave nothing. What decides is the pendulum's mass and its moment about the
-  arbor, and how much of a tooth's push the pallets pass on.
-- Margin and a long tick pull against each other, and the notes say why and by how much
-  (section 5). A pendulum that would give both needs weight above its arbor, where the crown
-  is.
-- `king/model.py`: new parameters `anchor_pin` (the thin arbor) and `beat` (where the anchor
-  stands when the pendulum hangs plumb); the escapement's, the bob's and the arch's values;
-  version 0.2.0. The film runs at 33 frames a second with a friction of 0.3.
-- `king/_layout.py` takes the anchor's rest from `beat`. `king/_parts.py` gives the anchor
-  its own bores and cuts the pallets off at the arch. `king/_run.py` starts a run with the
-  wheel pushed back if a pallet stands in a tooth, so a run can start from any angle.
-- `_shared.py`: `jewel_ring` and `steel_pin` take a diameter. The knight is unchanged.
-- `tests/king/test_run.py` is rewritten: 50 tests, among them thirty starts and three kings
-  with fits that print differently. The king's snapshot is regenerated. `cadkit` is
+- The client named the piece: "Continue building the chess set with the pawn".
+- New in `cadkit`: `features/ratchet.py`, a ratchet wheel with saw teeth and how a pawl's
+  nose meets it (outline, the nose in a tooth's corner, where a pawl comes to rest, how
+  surely a tooth holds it), with 12 tests. Nothing else in `cadkit` changed.
+- New: `src/chess_set_clockwork/pawn/` (`model.py`, `_layout.py`, `_parts.py`),
+  `tests/pawn/` with its snapshot, `docs/pawn/` with notes, stills and films. The entry
+  point `clockwork_pawn` is in `pyproject.toml`. `_shared.py`, the knight and the king are
   unchanged.
-- Stills and films in `docs/king/img/` are of 0.2.0.
-- The whole workspace passed after the last change to geometry: 267 tests, 8 minutes. Lint
-  is clean in this project; `ruff check .` reports four findings in `projects/serce/concept/`
-  that were there before.
+- The pawn's motion is rigid geometry followed in steps of 0.02 mm of the plunger's travel
+  (`pawn/_layout.py`, `move()`). There is no friction in it and no run model as the king
+  has.
+- The whole workspace passed at the end of the session: 296 tests, 8 minutes. Lint is clean
+  in this project and in `cadkit`; `ruff check .` reports four findings in
+  `projects/serce/concept/` that were there before.
+- Nothing listened on the viewer's port 3939, so the pawn was not sent to VS Code.
 
 ## How to continue
 
-1. Read `docs/king/design-notes.md`: section 5 for what the second build changed and what
-   was learned, section 10 for what the run model finds, section 13 for the next steps in
-   order. They are the client's view of the second build and of its shorter tick, then test
-   prints, which are now the only way to learn more.
-2. For how a piece is put together in code, read the king or the knight. Each piece is its own
-   folder, `src/chess_set_clockwork/<piece>/`: `model.py` holds the parameters, `build()` and
-   the film; `_layout.py` every derived position and the motion, the pawl's included;
-   `_parts.py` the solids; the king's `_run.py` whether it ticks.
-3. Still open from before: the client's view of the knight, and test prints of the knight
-   (`docs/knight/design-notes.md`, section 11). The brief's advice to prototype the pawn early
-   (the tightest fit, sixteen of them) also still stands.
+1. **The client's view of the pawn**, and of the decisions listed above. Until then the pawn
+   is a proposal.
+2. **Then either the next piece or test prints**; the client decides. Rook, bishop and queen
+   are left; `docs/brief.md`, section 4, gives each its clockwork element. For prints, the
+   pawn is the smallest piece and the cheapest to try: `docs/pawn/design-notes.md`, section
+   11; the king's are in `docs/king/design-notes.md`, section 13, the knight's in
+   `docs/knight/design-notes.md`, section 11.
+3. For how a piece is put together in code, read the pawn: it is the shortest. Each piece is
+   its own folder, `src/chess_set_clockwork/<piece>/`: `model.py` holds the parameters,
+   `build()` and the film; `_layout.py` every derived position and the motion; `_parts.py`
+   the solids; the king's `_run.py` whether it ticks. Tests go in `tests/<piece>/` with their
+   own `snapshots/`, notes and images in `docs/<piece>/`.
+4. Still open from before: the client's view of the knight.
 
 ```
 uv sync --all-packages
-uv run pytest projects/chess_set_clockwork           # 40 seconds
-uv run pytest projects/chess_set_clockwork/tests/king/test_run.py    # the run model, 15 seconds
-uv run pytest packages/cadkit/tests/test_escapement.py packages/cadkit/tests/test_escapement_run.py
-uv run cadkit show clockwork_king -v playing         # the model in the OCP viewer (port 3939)
-uv run cadkit build clockwork_king -v playing --render    # exports and stills, 1 minute
-uv run cadkit build clockwork_king -v playing --animate   # adds the three films, 15 minutes
+uv run pytest projects/chess_set_clockwork           # 50 seconds
+uv run pytest projects/chess_set_clockwork/tests/pawn                # 7 seconds
+uv run pytest packages/cadkit/tests/test_ratchet.py
+uv run cadkit show clockwork_pawn -v playing         # the model in the OCP viewer (port 3939)
+uv run cadkit build clockwork_pawn -v playing --render    # exports and stills, 30 seconds
+uv run cadkit build clockwork_pawn -v playing --animate   # adds the two films, 4 minutes
 ```
 
-A move run through by hand, from the repository root:
+One move of the pawn looked at by hand, from the repository root:
 
 ```
 uv run python -c "
-from chess_set_clockwork.king.model import Params, ticking
-ran = ticking(Params(), friction=0.4, pin_friction=0.4, angle=-5.0)
-print(ran.finished, len(ran.beats), ran.swing())"
+from chess_set_clockwork.pawn.model import Params, balance
+from chess_set_clockwork.pawn._layout import move
+made = move(Params())
+print(made.fallen, made.under, made.meets, made.turned, made.swing)
+print(balance(Params()))"
 ```
 
-The same build commands with `clockwork_knight` give the knight. Run `uv` from the repository
-root, not from this folder. Outputs go to `dist/<model>/<version>/playing/` at the repository
-root.
+The same build commands with `clockwork_knight` or `clockwork_king` give the other pieces
+(the king's films take 15 minutes). Run `uv` from the repository root, not from this folder.
+Outputs go to `dist/<model>/<version>/playing/` at the repository root.
 
 ## Where things are
 
@@ -119,8 +125,9 @@ root.
 |---|---|
 | `docs/brief.md` | The idea, the verdict, the recommended concept, the client's decisions and how the estimates were made |
 | `docs/knight/design-notes.md` | The knight as built: how it works, parts, steel, figures, assembly, open points |
-| `docs/king/design-notes.md` | The king as built: how it works, what changed from the paper design and between the two builds, parts, figures, what was checked and what the run model finds, open points, next steps |
-| `docs/<piece>/img/` | Stills and films of the piece: the knight at 0.1.0, the king at 0.2.0 |
+| `docs/king/design-notes.md` | The king as built: how it works, what changed between the two builds, parts, figures, what the run model finds, open points, next steps |
+| `docs/pawn/design-notes.md` | The pawn as built: how it works, the decisions taken, parts, steel, figures, assembly, what was tried and dropped, open points, next steps |
+| `docs/<piece>/img/` | Stills and films of the piece: the knight at 0.1.0, the king at 0.2.0, the pawn at 0.1.0 |
 | `A_skeleton_clocks.png` | The client's concept picture: style reference only, its mechanisms do not work as drawn |
 | `src/chess_set_clockwork/<piece>/model.py` | Parameters, the variant, `build()`, `balance()`, render settings and film poses |
 | `src/chess_set_clockwork/<piece>/_layout.py` | Every level, centre and angle derived from the parameters; the motion |
@@ -128,10 +135,13 @@ root.
 | `src/chess_set_clockwork/king/_run.py` | Whether the king ticks: masses from the solids, friction on the way to the escape wheel, one move run through |
 | `src/chess_set_clockwork/_shared.py` | What every piece shares: drawing helpers, the base's body, feet, jewel rings, steel pins |
 | `tests/<piece>/` | The piece's snapshot (`snapshots/`), model and motion tests; the king's run in `tests/king/test_run.py` |
-| `packages/cadkit/src/cadkit/features/escapement.py` (repository root) | Recoil anchor escapement: wheel outline, pallets, and a check of how they meet |
+| `packages/cadkit/src/cadkit/features/ratchet.py` (repository root) | Ratchet wheel with saw teeth, and how a pawl's nose meets it |
+| `packages/cadkit/src/cadkit/features/escapement.py` | Recoil anchor escapement: wheel outline, pallets, and a check of how they meet |
 | `packages/cadkit/src/cadkit/features/escapement_run.py` | The same escapement run with forces: torque, inertia, contact and dry friction |
 
-The client watches progress in VS Code: the OCP CAD Viewer listens on port 3939. The king was
-sent to it in the fourth session, at the client's request, and at the start of the fifth. In
-the sixth session nothing listened on that port, so the second build was not sent.
-Commit only when the client asks.
+The stills and films in `docs/<piece>/img/` are small copies made by hand from `dist/`; a
+build does not update them.
+
+The client watches progress in VS Code: the OCP CAD Viewer listens on port 3939. In the sixth
+and seventh sessions nothing listened on that port, so the king's second build and the pawn
+were not sent. Commit only when the client asks.
