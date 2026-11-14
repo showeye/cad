@@ -11,16 +11,17 @@ is set down. The mane is a real gear in the load path, not decoration.
 It was built first because the client picked it as the set's signature piece. The brief's
 advice to prototype the pawn first (tightest fit, sixteen of them) still stands for the set.
 
-![The knight standing, and lifted 9 mm](img/knight/standing_and_lifted.jpg)
+![The knight standing, and lifted 9 mm](img/standing_and_lifted.jpg)
 
-Films: [`img/knight/motion.gif`](img/knight/motion.gif) (one lift and setting down) and
-[`img/knight/mechanism.gif`](img/knight/mechanism.gif) (the same with the left plate taken
-off). Other stills are in `img/knight/`.
+Films: [`img/motion.gif`](img/motion.gif) (one lift and setting down) and
+[`img/mechanism.gif`](img/mechanism.gif) (the same with the left plate taken
+off). Other stills are in `img/`.
 
 ## 2. Decisions this build assumes
 
-The three decisions in `brief.md` section 6 were not answered before this build. It follows
-the brief's recommendations. **The client has not confirmed them.**
+The three decisions in `brief.md` section 6 were not answered before this build, which
+followed the brief's recommendations. **The client confirmed all three on 2026-11-14**: steel
+allowed, playing size, files or printed sets left open.
 
 | Decision | Assumed | Effect if it changes |
 |---|---|---|
@@ -116,7 +117,7 @@ Flat pliers across the two plates do it and stop when the pin is flush.
 
 ## 8. What the tests show
 
-`tests/test_knight_motion.py`, 12 tests, and the snapshot in `tests/test_knight.py`:
+`tests/knight/test_motion.py`, 12 tests, and the snapshot in `tests/knight/test_model.py`:
 
 - The head turns 28.65° over the travel and nothing turns further above it.
 - No part overlaps another standing, at four positions through the travel, or held up.
@@ -149,7 +150,7 @@ Flat pliers across the two plates do it and stop when the pin is flush.
 2. **Surfaces are plain.** No chamfers on the plates or the head, no relief. The outlines
    are the first ones that balanced and cleared; the look deserves its own pass. Seen
    nose-on the piece is a stack of flat plates 16 mm wide on a 35 mm base
-   (`img/knight/front.jpg`): the side is its good view.
+   (`img/front.jpg`): the side is its good view.
 3. **The wheel's spokes are not see-through.** The pinion has to print on something, so the
    spokes stand on a web. From the left the rack and pinion are hidden behind it.
 4. **The feet cannot be released** once clicked in. Fine for a sold piece, awkward for a
@@ -159,9 +160,10 @@ Flat pliers across the two plates do it and stop when the pin is flush.
 6. **A knocked-over piece.** The plates are printed flat and are strong in their plane. The
    ears of the head are the thinnest feature and take the fall; not checked.
 7. **Rattle.** The weight has 0.2 mm of play in its tunnel and may be heard.
-8. **Shared parts.** Base, plunger and the drawing helpers are in the knight's files and in
-   `_shared.py`. When the second piece is built they should be generalised, and the helpers
-   moved to `cadkit`.
+8. **Shared parts.** Done in part on 2026-11-14: the base's body, the mortises, the sprung
+   feet, the jewel ring and the steel pin are now in `_shared.py`, and the knight uses them
+   (its snapshot is unchanged). The plunger is still the knight's own. The drawing helpers
+   stay in the project until another product needs them.
 
 ## 11. Ideas for the test prints
 

@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from cadkit.testing import check_model
-from chess_set_clockwork.knight import model
+from chess_set_clockwork.knight.model import model
 
 
 def test_variants():

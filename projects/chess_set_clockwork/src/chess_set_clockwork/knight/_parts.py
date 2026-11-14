@@ -7,28 +7,26 @@ upright. Sizes come from the parameters, positions from the layout.
 """
 
 from build123d import (
-    Axis,
-    Box,
     CenterArc,
     Circle,
     Cylinder,
-    Plane,
-    Polyline,
     Pos,
     Rectangle,
     Rot,
     SlotArc,
-    Sphere,
     Spline,
     fillet,
-    make_face,
-    revolve,
     trace,
 )
-from cadkit.features.gears import gear_outline, rack_outline
+from cadkit.features.gears import rack_outline
 
-from chess_set_clockwork._knight_layout import layout
-from chess_set_clockwork._shared import polar, rod_y, slab, strap
+from chess_set_clockwork import _shared as shared
+from chess_set_clockwork._shared import box as _box
+from chess_set_clockwork._shared import gear_face as _gear
+from chess_set_clockwork._shared import polygon as _polygon
+from chess_set_clockwork._shared import rod_y, slab, strap
+from chess_set_clockwork._shared import sector as _sector
+from chess_set_clockwork.knight._layout import layout
 
 # The head's outline in its own frame at rest: arbor at the origin, nose towards -X.
 HEAD = [
@@ -60,29 +58,7 @@ NECK = [(-10.0, 5.0), (-10.2, 9.5), (-12.7, 17.0)]
 NECK_UPPER = (3.2, 9.5)  # the neck's next point, measured from the front post
 
 
-def _polygon(points):
-    return make_face(Polyline(*points, close=True))
-
-
-def _gear(module, teeth, shift, backlash):
-    return _polygon(gear_outline(module, teeth, shift, backlash))
-
-
-def _box(x0, x1, y0, y1, z0, z1):
-    return Pos((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2) * Box(x1 - x0, y1 - y0, z1 - z0)
-
-
 # ---------------------------------------------------------------- head and mane
-def _sector(inner, outer, start, end):
-    """Part of a ring about the origin between two directions."""
-    steps = max(2, round(abs(end - start) / 10))
-    angles = [start + (end - start) * i / steps for i in range(steps + 1)]
-    return _polygon(
-        [polar((0, 0), outer, a) for a in angles]
-        + [polar((0, 0), inner, a) for a in reversed(angles)]
-    )
-
-
 def head_sketch(p):
     """Head and mane in the head's own frame: one flat outline, the mane a slice of a gear."""
     L = layout(p)
@@ -119,9 +95,7 @@ def wheel(p):
     place = Pos(*L.wheel)
     root = L.wheel_tip - 2.25 * p.module
     rim = root - p.wheel_rim
-    windows = Circle(rim) - Circle(p.wheel_hub)
-    for i in range(p.spokes):
-        windows -= Rot(0, 0, i * 360 / p.spokes) * Pos(rim / 2, 0) * Rectangle(rim, p.spoke)
+    windows = shared.spoke_windows(rim, p.wheel_hub, p.spokes, p.spoke)
     turn = Rot(0, 0, L.wheel_angle)
     body = slab(place * turn * _gear(p.module, p.wheel_teeth, 0.0, p.backlash), *L.wheel_y)
     body -= slab(place * turn * windows, L.wheel_y[0] - 1, L.wheel_y[1] - p.wheel_web)
@@ -170,22 +144,8 @@ def plunger(p):
 def base(p):
     """Flange and drum with the plunger's slot and the four mortises; prints upright."""
     L = layout(p)
-    rf, rd, hf, hb, c = p.base / 2, p.drum / 2, p.flange_height, p.base_height, p.base_chamfer
-    profile = [
-        (0, 0),
-        (rf - c, 0),
-        (rf, c),
-        (rf, hf - (rf - rd) * 0.6),
-        (rd + (rf - rd) * 0.4, hf),
-        (rd, hf),
-        (rd, hb - c),
-        (rd - c, hb),
-        (0, hb),
-    ]
-    body = revolve(Plane.XZ * _polygon(profile), Axis.Z)
-    for i in range(p.studs):
-        at = polar((0, 0), rd, (i + 0.5) * 360 / p.studs)
-        body += Pos(at[0], at[1], (hf + hb) / 2) * Sphere(p.stud)
+    hb = p.base_height
+    body = shared.base_body(p)
     y = L.half + p.slide
     lower = L.bar_half + p.slide
     upper = lower + p.ear
@@ -193,17 +153,8 @@ def base(p):
     body -= _box(-upper, upper, -y, y, L.ledge, hb + 1)
     for side in (-1, 1):
         for x in L.feet:
-            body -= _mortise(p, L, x, side)
+            body -= shared.mortise(p, L.outer, x, side)
     return body
-
-
-def _mortise(p, L, x, side):
-    w, fit = p.tenon / 2 + p.tenon_fit, p.tenon_fit
-    y0, y1 = L.outer - p.tenon_thick - fit, L.outer + fit
-    y0, y1 = (y0, y1) if side > 0 else (-y1, -y0)
-    hole = _box(x - w, x + w, y0, y1, -1, p.base_height + 1)
-    pocket = p.barb + 2 * fit
-    return hole + _box(x - w - pocket, x + w + pocket, y0, y1, -1, p.catch)
 
 
 # ---------------------------------------------------------------- plates
@@ -224,23 +175,6 @@ def plate_sketch(p):
     sketch += Pos(*L.banking) * Circle(p.pin / 2 + 1.9)
     above = Pos(0, p.base_height + 50) * Rectangle(200, 100)
     return sketch & above
-
-
-def _tenon(p, x):
-    """Two sprung prongs below a foot; each has a barb that catches under the base."""
-    w, top, tip = p.tenon / 2, p.base_height + 1.0, p.tenon_tip
-    catch = p.catch - 0.1
-    prong = [
-        (-w, top),
-        (-w, catch),
-        (-w - p.barb, catch),
-        (-w - p.barb, catch - 0.25),
-        (-w + 0.15, tip),
-        (-w + p.prong, tip),
-        (-w + p.prong, top),
-    ]
-    mirrored = [(-u, v) for u, v in prong]
-    return Pos(x, 0) * (_polygon(prong) + _polygon(mirrored))
 
 
 def plate(p, side: int):
@@ -269,23 +203,19 @@ def plate(p, side: int):
     for centre in (L.front_post, L.rear_post):  # the two half posts meet in the middle
         body += slab(Pos(*centre) * (Circle(p.post) - fixed), *span(0, L.inner))
     for x in L.feet:
-        body += slab(_tenon(p, x), *span(L.outer - p.tenon_thick, L.outer))
+        body += slab(shared.sprung_tenon(p, x), *span(L.outer - p.tenon_thick, L.outer))
     return body
 
 
 def jewel(p, centre, side: int):
     """Red ring in the plate's outer face; the arbor's steel pin turns in it."""
-    L = layout(p)
-    ring = Pos(*centre) * (Circle(p.jewel / 2) - Circle((p.pin + p.pin_run) / 2))
-    y = (L.outer - p.jewel_depth, L.outer)
-    return slab(ring, *(y if side > 0 else (-y[1], -y[0])))
+    return shared.jewel_ring(p, centre, layout(p).outer, side)
 
 
 # ---------------------------------------------------------------- steel
 def pin(p, centre, length=None):
     """A steel pin across the piece: arbor, pillar or banking pin."""
-    length = p.pin_length if length is None else length
-    return rod_y(p.pin / 2, -length / 2, length / 2, centre)
+    return shared.steel_pin(p, centre, length)
 
 
 def steel_weight(p):

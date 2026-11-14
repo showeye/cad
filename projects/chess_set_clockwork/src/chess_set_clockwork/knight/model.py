@@ -23,9 +23,9 @@ from cadkit.params import Params as BaseParams
 from cadkit.process import U1
 from pydantic import Field, model_validator
 
-from chess_set_clockwork import _knight_parts as parts
-from chess_set_clockwork._knight_layout import layout, pose
-from chess_set_clockwork._shared import turned
+from chess_set_clockwork._shared import grams, turned
+from chess_set_clockwork.knight import _parts as parts
+from chess_set_clockwork.knight._layout import layout, pose
 
 
 class Params(BaseParams):
@@ -282,9 +282,6 @@ def _render_poses(params: "Params", steps: int = FRAMES) -> list:
     ]
 
 
-PLASTIC, STEEL = 1.24e-3, 7.85e-3  # g per mm3: PLA, and steel for the pins
-
-
 def balance(params: "Params") -> dict:
     """Weights in grams, and how hard the head's own weight works against the plunger.
 
@@ -296,19 +293,16 @@ def balance(params: "Params") -> dict:
 
     L = layout(params)
     rest = _rest(params.model_copy(update={"lift": 0.0}))
-    grams = {
-        name: shape.volume * (STEEL if name.startswith("reference_") else PLASTIC)
-        for name, shape in rest.items()
-    }
+    mass = {name: grams(name, shape) for name, shape in rest.items()}
     lever = L.pivot[0] - rest["head"].center(CenterOf.MASS).X  # positive: nose-heavy
     train = (params.wheel_teeth / params.mane_teeth) / L.pinion_radius
-    plunger = grams["plunger"] + grams["reference_weight"]
+    plunger = mass["plunger"] + mass["reference_weight"]
     return {
-        "head": grams["head"],
+        "head": mass["head"],
         "head_lever": lever,
-        "head_at_plunger": grams["head"] * lever * train,
+        "head_at_plunger": mass["head"] * lever * train,
         "plunger": plunger,
-        "piece": sum(grams.values()),
+        "piece": sum(mass.values()),
     }
 
 

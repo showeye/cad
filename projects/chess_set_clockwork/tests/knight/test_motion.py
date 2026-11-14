@@ -5,9 +5,16 @@ import math
 import pytest
 from build123d import Pos
 from cadkit.validate import overlaps
-from chess_set_clockwork._knight_layout import layout, pose
 from chess_set_clockwork._shared import turned
-from chess_set_clockwork.knight import Params, _render_poses, _rest, balance, build, moving_parts
+from chess_set_clockwork.knight._layout import layout, pose
+from chess_set_clockwork.knight.model import (
+    Params,
+    _render_poses,
+    _rest,
+    balance,
+    build,
+    moving_parts,
+)
 from pydantic import ValidationError
 
 P = Params()

@@ -16,7 +16,7 @@ red jewels at the wheel centres.
 
 The question asked was whether the pieces can hold movement that does anything meaningful. The
 client's reply to the assessment below was "Fantastic, let's store it as a brief in the project
-for future work". The three decisions in section 6 have not been answered.
+for future work". The three decisions in section 6 were answered later, on 2026-11-14.
 
 ## 2. Verdict
 
@@ -84,15 +84,17 @@ a printed escapement. That would be a separate product.
 
 ## 6. Decisions before modelling
 
-Not answered yet. The recommendation is given with each.
+Answered by the client on 2026-11-14, before the king was designed. Each answer is the
+recommendation that was given with the question.
 
-1. **Hardware.** Allow steel balls as weights and pendulum bobs, and steel pins as arbors. A
-   printed Ø10 ball weighs 0.6 g against 4 g in steel, and the plunger and pendulum need that
-   mass.
-2. **Size.** Stay at normal playing size. A 1.5× display set makes everything easier,
-   including a king that really ticks.
-3. **Files or printed sets.** If the set is sold as files, the mechanisms must tolerate other
-   people's printers, which pushes towards the simpler options.
+1. **Hardware: steel is allowed.** Steel pins as arbors, steel pins or balls as weights and
+   pendulum bobs. A printed Ø10 ball weighs 0.6 g against 4 g in steel, and the plunger and
+   pendulum need that mass.
+2. **Size: normal playing size.** King base 44 mm, matching the knight as built. A 1.5×
+   display set would make everything easier but no longer fits a normal board.
+3. **Files or printed sets: not decided yet.** Every fit stays generous and a named parameter;
+   the choice is made after the first test prints. If the set is sold as files, the mechanisms
+   must tolerate other people's printers, which pushes towards the simpler options.
 
 ## 7. How the estimates were made
 
