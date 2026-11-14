@@ -22,10 +22,15 @@ from chess_set_clockwork.king._layout import _unit, layout
 ORB_SITS = 0.82  # the orb's centre above the crown's block, in orb radii
 
 
+def _arbor(p, centre) -> float:
+    """Diameter of the steel pin at `centre`: the anchor's arbor is thinner than the others."""
+    return p.anchor_pin if centre == layout(p).pivot else p.pin
+
+
 def _bore(p, centre, turns: bool):
     """Hole for a steel pin through everything at `centre`: a running or a press fit."""
     fit = p.pin_run if turns else p.pin_grip
-    return rod_y((p.pin + fit) / 2, -50, 50, centre)
+    return rod_y((_arbor(p, centre) + fit) / 2, -50, 50, centre)
 
 
 # ---------------------------------------------------------------- base
@@ -147,11 +152,11 @@ def yoke_sketch(p):
     """Pallets and the arch that carries them, about the escape wheel's centre."""
     L = layout(p)
     e = L.escapement
-    arch = Circle(L.yoke[1]) - Circle(L.yoke[0])
-    sketch = arch & shared.wedge(2 * L.yoke[1], *L.yoke_span)
+    sketch = Circle(L.yoke[1]) - Circle(L.yoke[0])
     for nose in e.pallets(p.pallet_length):
         sketch += _polygon(nose)
-    return sketch
+    # the arch's ends and its outer edge cut the pallets off where no tooth reaches them
+    return sketch & shared.wedge(2 * L.yoke[1], *L.yoke_span) & Circle(L.yoke[1])
 
 
 def pendulum_sketch(p):
@@ -228,9 +233,11 @@ def window_sketch(p):
 def plate(p, side: int):
     """One plate; side -1 is the front (Y < 0), +1 the rear."""
     L = layout(p)
-    turning = Circle((p.pin + p.pin_run) / 2)
     fixed = Circle((p.pin + p.pin_grip) / 2)
     arbors = (L.great, L.escape, L.pivot)
+
+    def turning(centre):  # the hole in which the arbor at `centre` turns
+        return Circle((_arbor(p, centre) + p.pin_run) / 2)
 
     def span(a, b):  # Y levels for this side, from |Y| = a to |Y| = b
         return (a, b) if side > 0 else (-b, -a)
@@ -244,7 +251,7 @@ def plate(p, side: int):
         sketch += strap((-p.column_x, level), (p.column_x, level), p.strap)
         sketch += Pos(*L.great) * Circle(p.boss)
     for centre in arbors:
-        sketch -= Pos(*centre) * turning
+        sketch -= Pos(*centre) * turning(centre)
     for centre in L.posts:
         sketch -= Pos(*centre) * fixed
     body = slab(sketch, *span(L.inner, L.outer))
@@ -255,10 +262,10 @@ def plate(p, side: int):
         body -= slab(Pos(*centre) * Circle(pocket), *span(L.outer - p.jewel_depth, L.outer + 1))
         tall = side > 0 and centre != L.pivot
         if tall:  # the wheels bear on these; the pendulum's ring swings round the upper one
-            boss = Pos(*centre) * (Circle(p.boss_tall) - turning)
+            boss = Pos(*centre) * (Circle(p.boss_tall) - turning(centre))
             body += slab(boss, *span(L.wheels[1] + L.play, L.inner))
         else:  # the moving parts bear on these rings, not on the plate's face
-            ring = Pos(*centre) * (Circle(p.shoulder_ring) - turning)
+            ring = Pos(*centre) * (Circle(p.shoulder_ring) - turning(centre))
             body += slab(ring, *span(L.inner - p.shoulder, L.inner))
     for centre in L.posts:  # the two half posts meet in the middle
         body += slab(Pos(*centre) * (Circle(p.post) - fixed), *span(0, L.inner))
@@ -274,7 +281,8 @@ def jewel(p, centre, side: int):
     """Red ring in a plate's outer face; the arbor's steel pin turns in it."""
     L = layout(p)
     small = side < 0 and centre == L.great
-    return shared.jewel_ring(p, centre, L.outer, side, p.jewel_small if small else None)
+    diameter = p.jewel_small if small else None
+    return shared.jewel_ring(p, centre, L.outer, side, diameter, _arbor(p, centre))
 
 
 # ---------------------------------------------------------------- crown
@@ -321,7 +329,7 @@ def cross(p):
 # ---------------------------------------------------------------- steel
 def pin(p, centre, length=None):
     """A steel pin across the piece: arbor or pillar."""
-    return shared.steel_pin(p, centre, length)
+    return shared.steel_pin(p, centre, length, _arbor(p, centre))
 
 
 def steel_weight(p):

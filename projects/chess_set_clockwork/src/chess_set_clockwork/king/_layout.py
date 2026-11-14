@@ -339,7 +339,7 @@ class Pose:
     turn: float  # of the great wheel and the star; negative is earlier in the move
     escape: float  # of the escape wheel and the pinion
     pawl: float  # lean of the pawl from the way it stands at rest
-    anchor: float  # of the anchor and the pendulum
+    anchor: float  # of the anchor from its centre; a pendulum that hangs plumb holds `beat`
 
 
 def escapement(p) -> RecoilEscapement:
@@ -373,9 +373,10 @@ def layout(p) -> Layout:
     e = escapement(p)
     pivot = (0.0, escape[1] + e.pivot_distance)
 
-    # At rest the pendulum hangs plumb and the wheel has been pushed on until a pallet stops
-    # it; it is drawn a little short of that, so that the solids do not touch.
-    stopped = e.settle(-math.degrees(e.impulse / e.tip_radius), 0.0, p.pallet_length)
+    # At rest the pendulum hangs plumb, which holds the anchor at `beat`, and the wheel has
+    # been pushed on until a pallet stops it; it is drawn a little short of that, so that the
+    # solids do not touch.
+    stopped = e.settle(-math.degrees(e.impulse / e.tip_radius), p.beat, p.pallet_length)
     progress = stopped - p.rest_gap
 
     lobe0, knuckle, axis, outline, cup, edges = pawl_outline(p)
@@ -447,17 +448,19 @@ def layout(p) -> Layout:
 def level(p, progress: float) -> float:
     """An angle at which the anchor stands clear of an escape wheel at `progress`.
 
-    The pendulum hangs plumb if the wheel lets it; otherwise the anchor is turned the
-    shorter way until its pallets are clear, as a tooth would push it.
+    The pendulum hangs plumb if the wheel lets it, which is the anchor at `beat`; otherwise
+    the anchor is turned the shorter way until its pallets are clear, as a tooth would push
+    it.
     """
     L = layout(p)
     e = L.escapement
-    if e.interference(progress, 0.0, p.pallet_length) <= 0:
-        return 0.0
+    if e.interference(progress, p.beat, p.pallet_length) <= 0:
+        return p.beat
     for i in range(1, 200):
-        for angle in (-0.1 * i, 0.1 * i):
+        for way in (-1, 1):
+            angle = p.beat + 0.1 * i * way
             if e.interference(progress, angle, p.pallet_length) <= 0:
-                return angle + math.copysign(0.05, angle)
+                return angle + 0.05 * way
     raise ValueError("No angle of the anchor clears the escape wheel")
 
 
@@ -477,10 +480,11 @@ def sinking(p, lift: float, anchor: float | None = None) -> Pose:
     return running(p, turn, drop, pawl, anchor)
 
 
-def lifting(p, lift: float, anchor: float = 0.0) -> Pose:
+def lifting(p, lift: float, anchor: float | None = None) -> Pose:
     """The king `lift` above the board on its way up: the train stands, the pawl clicks."""
     L = layout(p)
     drop = min(max(lift, 0.0), p.travel)
+    anchor = p.beat if anchor is None else anchor
     return Pose(drop=drop, turn=0.0, escape=0.0, pawl=L.ratchet.lifted(drop), anchor=anchor)
 
 

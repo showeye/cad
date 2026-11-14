@@ -1,4 +1,4 @@
-"""The king's motion: one lobe and twenty beats per move, the pawl, the escapement, stops."""
+"""The king's motion: one lobe and sixteen beats per move, the pawl, the escapement, stops."""
 
 import math
 from itertools import pairwise
@@ -33,9 +33,9 @@ MOVING = set(moving_parts(P))
 TICKING = sum(_FILM[:5])  # index of the film's first ticking frame
 
 
-def test_one_move_is_one_lobe_and_twenty_beats():
+def test_one_move_is_one_lobe_and_sixteen_beats():
     assert L.ratio == pytest.approx(2.4)
-    assert E.beats(360 / P.star_teeth * L.ratio) == pytest.approx(20)
+    assert E.beats(360 / P.star_teeth * L.ratio) == pytest.approx(16)
     assert L.stroke == pytest.approx(3.144, abs=0.002)
     assert P.travel - L.stroke == pytest.approx(0.856, abs=0.002)  # the king falls this far first
     # above the stroke nothing has turned; within it the train follows the king down
@@ -48,8 +48,8 @@ def test_one_move_is_one_lobe_and_twenty_beats():
     ran = king.ticking(P, **FILM_RUN)
     assert len(ticking) - 1 - _FILM[5] == math.ceil(ran.times[-1] * 1000 / FRAME_MS)
     assert ticking[0][0].turn == pytest.approx(-60) and ticking[-1][0].turn == pytest.approx(0)
-    assert ticking[20][0].escape == pytest.approx(144 - ran.at(1.0)[0], abs=0.2)
-    assert ticking[20][0].anchor == pytest.approx(ran.at(1.0)[1], abs=0.01)
+    assert ticking[20][0].escape == pytest.approx(144 - ran.at(0.6)[0], abs=0.2)
+    assert ticking[20][0].anchor == pytest.approx(ran.at(0.6)[1], abs=0.01)
     lifts = [lift for _, lift in ticking]
     assert all(b <= a + 0.03 for a, b in pairwise(lifts))  # the king sinks; a recoil lifts it
     assert max(abs(at.anchor) for at, _ in ticking) <= P.swing_stop + 0.1
@@ -132,11 +132,14 @@ def test_escapement_runs_on_the_solids():
     released = E.settle(L.progress, -release - 0.2, P.pallet_length)
     assert E.settle(released, -stop, P.pallet_length) < released - 1.0
     # the entry pallet meets the flank of a tooth about one degree beyond the stop
-    progress = E.settle(E.settle(L.progress, release + 0.2, P.pallet_length), 9.6, 5.5)
-    assert overlaps(_pair(progress, 9.6))
-    # at rest the pendulum hangs plumb and the wheel stands just short of a pallet
-    assert E.interference(L.progress, 0.0, P.pallet_length) == 0
-    assert E.interference(L.progress + 2 * P.rest_gap, 0.0, P.pallet_length) > 0
+    progress = E.settle(E.settle(L.progress, release + 0.2, P.pallet_length), 8.5, P.pallet_length)
+    assert overlaps(_pair(progress, 8.5))
+    assert not overlaps(_pair(E.settle(progress, 8.1, P.pallet_length), 8.1))
+    # at rest the pendulum hangs plumb, the anchor at `beat`, and the wheel stands just short
+    # of a pallet
+    assert E.interference(L.progress, P.beat, P.pallet_length) == 0
+    assert E.interference(L.progress + 2 * P.rest_gap, P.beat, P.pallet_length) > 0
+    assert sinking(P, 0).anchor == lifting(P, 9.0).anchor == P.beat
 
 
 def test_stops():
@@ -183,7 +186,9 @@ def test_weight_drives_the_train():
 def test_film_starts_and_ends_on_the_board():
     frames = _render_poses(P)
     assert frames[0] == frames[-1]
-    assert frames[0]["anchor"] == [[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0], [0, 0, 0, 1.0]]
+    # the film begins as the king is built: its anchor hangs at `beat` in both
+    still = [[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0], [0, 0, 0, 1.0]]
+    assert all(row == pytest.approx(same) for row, same in zip(frames[0]["anchor"], still))
     held = frames[sum(_FILM[:2]) + 1]
     assert held["base"][2][3] == pytest.approx(8.0)
     assert held["plunger"][2][3] == pytest.approx(8.0 - P.travel)

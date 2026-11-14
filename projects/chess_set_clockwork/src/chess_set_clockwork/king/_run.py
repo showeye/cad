@@ -224,25 +224,31 @@ def tick(
     to the plunger's travel above the stroke if it was let go as the plunger touched. `angle`
     is where the anchor stands at that moment, let go from rest: where the pendulum hangs in
     a standing king if it is not given, anywhere up to its stops if the hand left it swinging.
+    If a pallet then stands in a tooth, the wheel starts where that pallet has pushed it back
+    to, as a pendulum swinging in the hand does with a train that nothing drives.
     """
     L = layout(p)
-    pin = p.pin / 2
+    e = L.escapement
     pendulum = Pendulum(
         inertia=m.pendulum[1],
         mass=m.pendulum[0],
         arm=m.arm,
-        drag=pin_friction * pin * m.pendulum[0] * GRAVITY * 1e-3,
+        drag=pin_friction * p.anchor_pin / 2 * m.pendulum[0] * GRAVITY * 1e-3,
         stop=p.swing_stop,
     )
     weight = drive(p, m, friction, pin_friction)
+    angle = m.hang if angle is None else angle
+    progress = L.progress - weight.turn
+    if e.interference(progress, angle, p.pallet_length) > 0:
+        progress = e.settle(progress, angle, p.pallet_length) - p.rest_gap
     return run(
-        L.escapement,
+        e,
         weight,
         pendulum,
         depth=p.escape_depth,
         length=p.pallet_length,
-        progress=L.progress - weight.turn,
-        angle=m.hang if angle is None else angle,
+        progress=progress,
+        angle=angle,
         speed=landing(p, m, fall),
         friction=friction,
         limit=limit,

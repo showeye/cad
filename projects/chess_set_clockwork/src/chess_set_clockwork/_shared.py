@@ -157,15 +157,20 @@ def sprung_tenon(p, x):
 
 
 # ---------------------------------------------------------------- jewels and steel
-def jewel_ring(p, centre, outer, side, diameter=None):
-    """Red ring flush in a plate's outer face at |Y| = outer; the arbor turns in it."""
+def jewel_ring(p, centre, outer, side, diameter=None, pin=None):
+    """Red ring flush in a plate's outer face at |Y| = outer; the arbor turns in it.
+
+    `pin` is the arbor's diameter where it is not the piece's usual pin.
+    """
     diameter = p.jewel if diameter is None else diameter
-    ring = Pos(*centre) * (Circle(diameter / 2) - Circle((p.pin + p.pin_run) / 2))
+    pin = p.pin if pin is None else pin
+    ring = Pos(*centre) * (Circle(diameter / 2) - Circle((pin + p.pin_run) / 2))
     y = (outer - p.jewel_depth, outer)
     return slab(ring, *(y if side > 0 else (-y[1], -y[0])))
 
 
-def steel_pin(p, centre, length=None):
+def steel_pin(p, centre, length=None, diameter=None):
     """A steel pin across the piece: arbor, pillar or banking pin."""
     length = p.pin_length if length is None else length
-    return rod_y(p.pin / 2, -length / 2, length / 2, centre)
+    diameter = p.pin if diameter is None else diameter
+    return rod_y(diameter / 2, -length / 2, length / 2, centre)

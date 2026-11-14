@@ -62,32 +62,40 @@ class Params(BaseParams):
     great_angle: float = Field(default=0.0, ge=0, le=15)  # of the great wheel's gear at rest
 
     # the escapement (cadkit.features.escapement)
-    escape_teeth: int = Field(default=25, ge=20, le=30)
+    escape_teeth: int = Field(default=20, ge=20, le=30)
     escape_tip: float = Field(default=12.7, ge=11, le=13.2)  # radius over the teeth
     escape_depth: float = Field(default=3.2, ge=2.6, le=3.6)
-    span: int = Field(default=4, ge=3, le=5)  # the anchor reaches round span + 1/2 teeth
-    release: float = Field(default=4.0, ge=3, le=6)  # anchor's angle at which a tooth leaves
+    span: int = Field(default=3, ge=3, le=5)  # the anchor reaches round span + 1/2 teeth
+    release: float = Field(default=3.0, ge=3, le=6)  # anchor's angle at which a tooth leaves
     escape_drop: float = Field(default=0.5, ge=0.3, le=0.8)
     tooth_angle: float = Field(default=36.0, ge=30, le=40)
     escape_land: float = Field(default=0.2, ge=0.1, le=0.4)  # flat at a tooth's tip
     pallet_back: float = Field(default=75.0, ge=65, le=85)
-    pallet_length: float = Field(default=5.5, ge=4.5, le=6.5)  # of a pallet's two faces
+    # Both faces are drawn this long so that the ramp reaches the arch; the arch's ends and its
+    # outer edge cut them off.
+    pallet_length: float = Field(default=7.2, ge=4.5, le=7.5)
     rest_gap: float = Field(default=0.4, ge=0.2, le=1)  # escape wheel short of its pallet, deg
     hub: float = Field(default=3.4, ge=3, le=4)  # anchor's hub behind the escape wheel
     hub_clear: float = Field(default=0.6, ge=0.4, le=1)  # hub to the escape wheel's teeth
     yoke: float = Field(default=3.0, ge=2.4, le=4)  # width of the anchor's arch
     yoke_clear: float = Field(default=2.6, ge=2.2, le=3.5)  # arch outside the teeth, centred
-    # The arch reaches equally far past both pallets, so that the pendulum hangs plumb.
-    yoke_past: tuple[float, float] = (13.0, 13.0)  # past the exit and the entry pallet, deg
-    # On the solids the entry pallet meets the flank of a tooth at 9.2 degrees.
-    swing_stop: float = Field(default=8.5, ge=6, le=9)  # the ring stops the anchor here
+    # In a standing king the pendulum hangs with the anchor this far off its centre, the entry
+    # pallet lowered. Sinking, the king leans about two degrees and the pendulum stays plumb,
+    # which holds the anchor one degree to the other side of its centre instead of two: the
+    # escapement is nearer to being in beat while it runs.
+    beat: float = Field(default=1.0, ge=0, le=2.5)
+    # How far the arch reaches past the exit and the entry pallet, deg. The anchor hangs at
+    # `beat` because the arch is the shorter on the exit side; (15.4, 14) would hang centred.
+    yoke_past: tuple[float, float] = (12.0, 14.0)
+    # On the solids the entry pallet meets the flank of a tooth at 8.3 degrees.
+    swing_stop: float = Field(default=7.5, ge=6, le=9)  # the ring stops the anchor here
 
     # the pendulum
-    bob: float = Field(default=6.0, ge=5, le=6)  # steel pin across the pendulum
-    bob_length: float = Field(default=14.0, ge=10, le=16)
+    bob: float = Field(default=4.0, ge=4, le=6)  # steel pin across the pendulum
+    bob_length: float = Field(default=10.0, ge=10, le=16)
     bob_fit: float = Field(default=0.2, ge=0.1, le=0.4)
     bob_arm: float = Field(default=25.0, ge=22, le=27)  # bob below the anchor's arbor
-    bob_block: float = Field(default=10.0, ge=8, le=12)  # length of the block that holds it
+    bob_block: float = Field(default=8.0, ge=8, le=12)  # length of the block that holds it
     bob_wall: float = Field(default=1.0, ge=0.8, le=1.4)  # plastic above and below the bob
     ring_wall: float = Field(default=1.6, ge=1.2, le=2.4)
     rod: float = Field(default=3.0, ge=2.4, le=4)  # width of the pendulum's rod
@@ -119,6 +127,8 @@ class Params(BaseParams):
 
     # steel: cylindrical pins, ISO 2338 nominal sizes (verify against the supplier's sheet)
     pin: float = Field(default=2.0, ge=1.5, le=3)  # arbors and pillars
+    # The anchor's arbor is a thinner wire: friction there brakes the pendulum on every beat.
+    anchor_pin: float = Field(default=1.0, ge=1, le=2)
     pin_length: float = Field(default=24.0, ge=22, le=28)
     pin_run: float = Field(default=0.3, ge=0.15, le=0.5)  # bore minus pin where it turns
     pin_grip: float = Field(default=0.1, ge=0, le=0.2)  # bore minus pin where it is pressed in
@@ -188,7 +198,9 @@ class Params(BaseParams):
     def _check(self):
         L = layout(self)
         e = L.escapement
-        moves = 360 / self.star_teeth * L.ratio / e.pitch  # escape teeth let through per move
+        turn = 360 / self.star_teeth * L.ratio  # of the escape wheel in one move
+        moves = turn / e.pitch  # escape teeth let through per move
+        spokes = turn * self.escape_spokes / 360  # spokes that pass a place in one move
         wheel_step = self.wheel_teeth / self.star_teeth
         R = L.ratchet
         turns = [-360 / self.star_teeth * i / 12 for i in range(13)]
@@ -201,7 +213,7 @@ class Params(BaseParams):
             "a move does not end as it began": abs(moves - round(moves)) < 1e-9
             and abs(wheel_step - round(wheel_step)) < 1e-9
             and self.great_spokes % self.star_teeth in (0, self.great_spokes)
-            and round(moves) % self.escape_spokes == 0,
+            and abs(spokes - round(spokes)) < 1e-9,
             "star and escape wheel share a layer and would touch": self.star_circle
             + self.lobe
             + 0.4
@@ -224,7 +236,7 @@ class Params(BaseParams):
             "socket cannot hold the knuckle": self.pawl_neck + 2 * self.knuckle_play
             <= 1.6 * self.knuckle,
             "anchor's hub is too thin over the escape wheel": L.hub_front
-            >= (self.pin + self.pin_grip) / 2 + 0.6,
+            >= (self.anchor_pin + self.pin_grip) / 2 + 0.6,
             "pallets do not reach the anchor's arch": self.pallet_length
             * math.sin(math.radians(e.ramp))
             >= self.yoke_clear + e.engagement + 0.4,
@@ -281,7 +293,7 @@ ARBORS = ("great", "escape", "anchor")
 
 @lru_cache(maxsize=8)
 def _rest(params: "Params") -> dict:
-    """Every solid with the king standing on the board: plunger home, pendulum plumb."""
+    """Every solid with the plunger home and the anchor centred; standing, it hangs at `beat`."""
     L = layout(params)
     built = {
         "base": parts.base(params),
@@ -412,16 +424,17 @@ def balance(params: "Params") -> dict:
 
 variants = {"playing": Params()}
 process = U1
-version = "0.1.0"
+version = "0.2.0"
 model = Model("clockwork_king", version, variants, process, build)
 
 
 # ---------------------------------------------------------------- film
 LIFT = 8.0  # how high the film lifts the king
-FRAME_MS = 50
-_FILM = (4, 10, 4, 8, 2, 6)  # frames standing, going up, held, coming down, falling; standing
-# The friction the film's run is made with. With 0.26 and more the king as built stalls.
-FILM_RUN = {"friction": 0.2, "pin_friction": 0.2}
+FRAME_MS = 30  # a beat takes about 65 ms, so two frames show one
+_FILM = (7, 17, 7, 13, 3, 10)  # frames standing, going up, held, coming down, falling; standing
+# The friction the film's run is made with: the middle of what printed parts are taken to
+# have. The king ticks from rest with up to 0.51.
+FILM_RUN = {"friction": 0.3, "pin_friction": 0.3}
 
 
 def _steps(count: int) -> list:
@@ -437,23 +450,24 @@ def film(params: "Params") -> tuple:
     `ticking` with the friction of `FILM_RUN`, in real time: wheel and anchor stand where the
     run has them, and the king sinks as the wheel turns. Once the king is on the board the
     wheels are drawn at rest while the pendulum dies down, and the last frames bring the
-    anchor from where friction left it back to the middle, so that the film loops.
+    anchor from where friction left it back to where it hangs, so that the film loops.
     """
     L = layout(params)
     e, R = L.escapement, L.ratchet
     stand, up, hold, down, fall, rest = _FILM
-    still = (sinking(params, 0.0, anchor=0.0), 0.0)
+    beat = params.beat  # where the anchor hangs while the king stands or is carried
+    still = (sinking(params, 0.0, anchor=beat), 0.0)
     frames = [still] * stand
     frames += [(lifting(params, LIFT * s), LIFT * s) for s in _steps(up)]
     frames += [(lifting(params, LIFT), LIFT)] * hold
     lowered = [LIFT - (LIFT - params.travel) * s for s in _steps(down)]
     lowered += [params.travel - (params.travel - L.stroke) * (i + 1) / fall for i in range(fall)]
-    frames += [(sinking(params, lift, anchor=0.0), lift) for lift in lowered]
+    frames += [(sinking(params, lift, anchor=beat), lift) for lift in lowered]
     ran = ticking(params, **FILM_RUN)
     if ran.finished is None:
         raise ValueError("The king does not tick with the film's friction")
     start = L.progress - 360 / params.star_teeth * L.ratio
-    angle = 0.0
+    angle = beat
     for i in range(1, math.ceil(ran.times[-1] * 1000 / FRAME_MS) + 1):
         turned, angle = ran.at(i * FRAME_MS / 1000)
         progress = min(start + turned, L.progress)
@@ -462,11 +476,13 @@ def film(params: "Params") -> tuple:
             if progress < L.progress:
                 progress = e.settle(progress, angle, params.pallet_length) - 0.05
             else:  # the wheels are at rest: the anchor comes no closer than they let it
-                angle *= 0.9
+                angle = beat + (angle - beat) * 0.9
         turn = (progress - L.progress) / L.ratio
         drop, lean = R.seated(turn)
         frames.append((running(params, turn, drop, lean, anchor=angle), drop))
-    frames += [(sinking(params, 0.0, anchor=angle * (1 - s)), 0.0) for s in _steps(rest)]
+    frames += [
+        (sinking(params, 0.0, anchor=beat + (angle - beat) * (1 - s)), 0.0) for s in _steps(rest)
+    ]
     return tuple(frames)
 
 
@@ -495,9 +511,9 @@ def presentation(params: "Params") -> dict:
     return {
         "sheet": {
             "title": "CLOCKWORK KING",
-            "subtitle": "{name}  /  {version}  /  first build: real mechanism, plain surfaces",
-            "caption": "Set down, the king sinks 3 mm on its plunger and ticks twenty times",
-            "footer": "First build  |  Not printed yet  |  Film: run model at friction 0.2",
+            "subtitle": "{name}  /  {version}  /  second build: real mechanism, plain surfaces",
+            "caption": "Set down, the king sinks 3 mm on its plunger and ticks sixteen times",
+            "footer": "Second build  |  Not printed yet  |  Film: run model at friction 0.3",
         },
         "views": {
             "hero": dict(hero),
