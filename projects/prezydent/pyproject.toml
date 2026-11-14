@@ -1,0 +1,16 @@
+[project]
+name = "prezydent"
+version = "0.1.0"
+description = "Szyb Prezydent, Chorzów: scale model of the 1933 reinforced-concrete headframe"
+requires-python = ">=3.12"
+dependencies = ["cadkit"]
+
+[project.entry-points."cadkit.models"]
+prezydent = "prezydent.model:model"
+
+[tool.uv.sources]
+cadkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -9,6 +9,7 @@ members = [
     "carnall",
     "chess-set-clockwork",
     "fala",
+    "prezydent",
     "serce",
 ]
 
@@ -1430,6 +1431,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/83/43/85ef45e8b36c6a485
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/2d/d4bf65e47cea8ff2c794a600c4fd1273a7902f268757c531e0ee9f18aa58/pooch-1.9.0-py3-none-any.whl", hash = "sha256:f265597baa9f760d25ceb29d0beb8186c243d6607b0f60b83ecf14078dbc703b", size = 67175, upload-time = "2026-01-30T19:15:08.36Z" },
 ]
+
+[[package]]
+name = "prezydent"
+version = "0.1.0"
+source = { editable = "projects/prezydent" }
+dependencies = [
+    { name = "cadkit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "cadkit", editable = "packages/cadkit" }]
 
 [[package]]
 name = "prompt-toolkit"

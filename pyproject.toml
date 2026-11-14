@@ -18,6 +18,7 @@ members = [
     "projects/carnall",
     "projects/chess_set_clockwork",
     "projects/fala",
+    "projects/prezydent",
     "projects/serce",
 ]
 
@@ -39,5 +40,6 @@ testpaths = [
     "projects/carnall/tests",
     "projects/chess_set_clockwork/tests",
     "projects/fala/tests",
+    "projects/prezydent/tests",
     "projects/serce/tests",
 ]
